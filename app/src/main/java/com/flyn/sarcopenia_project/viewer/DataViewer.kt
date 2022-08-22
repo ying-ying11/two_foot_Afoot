@@ -13,6 +13,7 @@ import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.service.BleAction
 import com.flyn.sarcopenia_project.service.BleCommand
 import com.flyn.sarcopenia_project.service.BluetoothLeService
+import com.flyn.sarcopenia_project.toHexString
 import com.flyn.sarcopenia_project.toShortArray
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.tabs.TabLayout
@@ -23,10 +24,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.properties.Delegates
 import com.google.android.material.snackbar.Snackbar
 
 
@@ -61,9 +60,10 @@ class DataViewer: AppCompatActivity() {
             when (intent.action) {
                 BleAction.EMG_DATA_AVAILABLE.name -> {
                     intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        val data = it.toShortArray()[0]
-                        val text = getString(R.string.emg_describe, emgTransform(data.toFloat()))
-                        emg.addData(text, data)
+                        EmgDecoder.decode(it)?.forEach { data ->
+                            val text = getString(R.string.emg_describe, emgTransform(data.toFloat()))
+                            emg.addData(text, data)
+                        }
                     }?: return
                 }
                 BleAction.ACC_DATA_AVAILABLE.name -> {
@@ -96,6 +96,39 @@ class DataViewer: AppCompatActivity() {
     private fun emgTransform(value: Float): Float = value / 1023f * 3.6f
     private fun accTransform(value: Float): Float = value / 32767f * 2f
     private fun gyrTransform(value: Float): Float = value / 32767f * 250f
+
+    private fun emgDecode(raw: ByteArray): ShortArray? {
+        print("Data length: ${raw.size} - ")
+        raw.forEach {
+            print("${it.toUByte()} ")
+        }
+        println()
+        val size = raw[0].toUByte().toInt()
+        val result = ShortArray(size)
+        val checkSum = raw.filterIndexed {
+                index, _ -> index == raw.size - 1
+        }.map { value -> value.toUByte() }.sum() and 0xFFu
+        if (checkSum != raw[raw.size - 1].toUInt()) {
+            println("Check sum error")
+            return null
+        }
+        var loc = 1
+        for (i in 0 until size) {
+            var highBit: Int
+            var lowBit: Int
+            if (i % 2 == 1) {
+                highBit = raw[loc].toInt() and 0x0F
+                lowBit = raw[loc + 1].toInt()
+                loc += 3
+            }
+            else {
+                highBit = (raw[loc].toInt() shr 4) and 0x0F
+                lowBit = raw[loc + 1].toInt()
+            }
+            result[i] = ((highBit shl 8) or lowBit).toShort()
+        }
+        return result
+    }
 
     private suspend fun saveFile() {
         withContext(Dispatchers.IO) {

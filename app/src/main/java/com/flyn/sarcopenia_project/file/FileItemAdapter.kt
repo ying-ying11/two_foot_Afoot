@@ -3,6 +3,7 @@ package com.flyn.sarcopenia_project.file
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.flyn.sarcopenia_project.MainActivity
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.net.Client
+import io.netty.channel.ConnectTimeoutException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -21,6 +23,8 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
 
     companion object {
         const val FILE_DATA = "FileData"
+        private const val HOST = "140.135.101.61"
+//        private const val HOST = "140.135.101.71"
     }
 
     inner class ViewHolder(val view: View): RecyclerView.ViewHolder(view) {
@@ -128,7 +132,12 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
             println(it.absolutePath)
         }
         GlobalScope.launch(Dispatchers.IO) {
-            Client.transferFiles(context, files, "140.135.101.64")
+            try {
+                Client.transferFiles(context, files, HOST)
+            } catch (exception: ConnectTimeoutException) {
+                println("Time out")
+            }
+
         }
         isItemSelected(false)
     }

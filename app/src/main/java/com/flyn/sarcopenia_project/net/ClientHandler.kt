@@ -2,6 +2,8 @@ package com.flyn.sarcopenia_project.net
 
 import android.content.Context
 import android.widget.Toast
+import com.flyn.fc_message.message.FileMessage
+import com.flyn.fc_message.message.UUIDMessage
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import kotlinx.coroutines.Dispatchers
@@ -20,35 +22,17 @@ class ClientHandler(private val context: Context, private val uuid: UUID, privat
     }
 
     override fun channelActive(ctx: ChannelHandlerContext) {
+        ctx.writeAndFlush(UUIDMessage.encoder(ctx, UUIDMessage(uuid)))
         files.forEachIndexed { index, file ->
             try {
                 val channel = RandomAccessFile(file, "r").channel
                 var isRemaining = true
-                var isFirst = true
                 while (isRemaining) {
                     val buffer = ByteBuffer.allocateDirect(bufferSize)
                     isRemaining = channel.read(buffer) == bufferSize
                     buffer.flip()
-                    if (isFirst) {
-                        ctx.writeAndFlush(FileMessage(uuid, file.name, isRemaining, buffer)).let {
-                            if (!isRemaining && index == files.size - 1) {
-                                it.addListener {
-                                    GlobalScope.launch(Dispatchers.Main) {
-                                        Toast.makeText(context, "${files.size} File save complete.", Toast.LENGTH_SHORT).show()
-                                    }
-                                    ctx.close()
-                                }
-                            }
-                        }
-                        isFirst = false
-                    }
-                    else {
-                        ctx.writeAndFlush(FileMessage(
-                            FileMessage.REMAINING_FILE_UUID,
-                            FileMessage.REMAINING_FILE_NAME,
-                            isRemaining,
-                            buffer)
-                        ).let {
+                    FileMessage(file.name, isRemaining, buffer).run {
+                        ctx.writeAndFlush(FileMessage.encoder(ctx, this)).let {
                             if (!isRemaining && index == files.size - 1) {
                                 it.addListener {
                                     GlobalScope.launch(Dispatchers.Main) {

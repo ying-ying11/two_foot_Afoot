@@ -1,6 +1,7 @@
 package com.flyn.sarcopenia_project.net
 
 import android.content.Context
+import com.flyn.fc_message.base.RawMessageEncoder
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelOption
@@ -24,7 +25,7 @@ object Client {
                 handler(object: ChannelInitializer<NioSocketChannel>() {
 
                     override fun initChannel(ch: NioSocketChannel) {
-                        ch.pipeline().addLast(RawMsgEncoder(), FileMsgEncoder(), ClientHandler(context, uuid, files))
+                        ch.pipeline().addLast(RawMessageEncoder(), ClientHandler(context, uuid, files))
                     }
 
                 })

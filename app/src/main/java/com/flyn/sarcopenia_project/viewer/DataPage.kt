@@ -35,13 +35,16 @@ class DataPage(private val min: Float, private val max: Float,
     private lateinit var chart: LineChart
     private lateinit var describeText: TextView
     private var hasInit = false
+    private var prevTime = 0L
 
     fun addData(describe: String, vararg values: Short) {
         val time = Date().time - startTime
         dataLists[time] = values.toTypedArray()
         if (!hasInit) return
-        println("")
-        addDataToChart(time, dataLists[time]!!)
+        if (time - prevTime > 100) {
+            prevTime = time
+            addDataToChart(time, dataLists[time]!!)
+        }
         describeText.text = describe
     }
 
