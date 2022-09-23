@@ -33,6 +33,7 @@ class DataPage(private val min: Float, private val max: Float,
     private val startTime = Date().time
 
     private lateinit var chart: LineChart
+    private lateinit var samplingRateText: TextView
     private lateinit var describeText: TextView
     private var hasInit = false
     private var prevTime = 0L
@@ -40,12 +41,16 @@ class DataPage(private val min: Float, private val max: Float,
     fun addData(describe: String, vararg values: Short) {
         val time = Date().time - startTime
         dataLists[time] = values.toTypedArray()
-        if (!hasInit) return
+        if (context == null) return
         if (time - prevTime > 100) {
             prevTime = time
             addDataToChart(time, dataLists[time]!!)
+            requireActivity().runOnUiThread {
+                val samplingRate: Double = dataLists.size / time.toDouble() * 1000;
+                samplingRateText.text = getString(R.string.sampling_rate, samplingRate)
+                describeText.text = describe
+            }
         }
-        describeText.text = describe
     }
 
     fun getData(): Map<Long, Array<Short>> = dataLists.toSortedMap()
@@ -121,6 +126,7 @@ class DataPage(private val min: Float, private val max: Float,
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_data_page, container, false)
         chart = view.findViewById(R.id.file_viewer_emg_chart)
+        samplingRateText = view.findViewById(R.id.sampling_rate)
         describeText = view.findViewById(R.id.data_descriptor)
         initChart()
         initDataSet()

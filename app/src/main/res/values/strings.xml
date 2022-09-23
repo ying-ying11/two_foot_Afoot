@@ -12,6 +12,7 @@
     <string name="emg_describe">left: %.2f V\nright: %.2f V</string>
     <string name="acc_describe">x: %.2f g\ny: %.2f g\nz: %.2f g</string>
     <string name="gyr_describe">x: %.2f rad/s\ny: %.2f rad/s\nz: %.2f rad/s\n</string>
+    <string name="sampling_rate">Sampling Rate: %.2f</string>
 
     <string name="file_detail">Size: %s</string>
     <string name="check_saving">是否儲存檔案</string>

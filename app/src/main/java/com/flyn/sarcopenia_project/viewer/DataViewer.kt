@@ -60,7 +60,6 @@ class DataViewer: AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 BleAction.EMG_LEFT_DATA_AVAILABLE.name -> {
-                    Log.d(TAG, "receive left data")
                     intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
                         emgLeftData = EmgDecoder.decode(it)
                         emgState = emgState or 0x1
@@ -68,7 +67,6 @@ class DataViewer: AppCompatActivity() {
                     }
                 }
                 BleAction.EMG_RIGHT_DATA_AVAILABLE.name -> {
-                    Log.d(TAG, "receive right data")
                     intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
                         emgRightData = EmgDecoder.decode(it)
                         emgState = emgState or 0x2
@@ -116,7 +114,6 @@ class DataViewer: AppCompatActivity() {
     private fun gyrTransform(value: Float): Float = value / 32767f * 250f
 
     private fun addEmgData() {
-        Log.d(TAG, "emg state: $emgState")
         if (emgState != 0x3) return
         for (i in 0 until min(emgLeftData.size, emgRightData.size)) {
             val left = emgLeftData[i]
