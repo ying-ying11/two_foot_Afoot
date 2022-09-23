@@ -1,7 +1,7 @@
 package com.flyn.sarcopenia_project.service
 
 enum class BleCommand {
-    DEVICE_NAME_CHANGE, NOTIFICATION_ON, NOTIFICATION_OFF;
+    NOTIFICATION_ON, NOTIFICATION_OFF;
 
     companion object {
 

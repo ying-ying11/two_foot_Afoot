@@ -9,7 +9,7 @@
     <string name="acc_tab">ACC</string>
     <string name="gyr_tab">GYR</string>
 
-    <string name="emg_describe">EMG: %f V</string>
+    <string name="emg_describe">left: %.2f V\nright: %.2f V</string>
     <string name="acc_describe">x: %.2f g\ny: %.2f g\nz: %.2f g</string>
     <string name="gyr_describe">x: %.2f rad/s\ny: %.2f rad/s\nz: %.2f rad/s\n</string>
 

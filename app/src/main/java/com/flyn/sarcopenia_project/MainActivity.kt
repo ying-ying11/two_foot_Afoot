@@ -31,12 +31,12 @@ class MainActivity: AppCompatActivity() {
         private const val REQUEST_ENABLE_BT = 2
     }
 
-    enum class PermissionList(val permission: String, val code: Int) {
-        FINE_LOCATION_PERMISSION(Manifest.permission.ACCESS_FINE_LOCATION, 2),
+    enum class PermissionList(val permission: String) {
+        FINE_LOCATION_PERMISSION(Manifest.permission.ACCESS_FINE_LOCATION),
         @RequiresApi(Build.VERSION_CODES.S)
-        BLUETOOTH_SCAN(Manifest.permission.BLUETOOTH_SCAN, 4),
+        BLUETOOTH_SCAN(Manifest.permission.BLUETOOTH_SCAN),
         @RequiresApi(Build.VERSION_CODES.S)
-        BLUETOOTH_CONNECT(Manifest.permission.BLUETOOTH_CONNECT, 8)
+        BLUETOOTH_CONNECT(Manifest.permission.BLUETOOTH_CONNECT)
     }
 
     private val bluetoothConnectReceiver = object: BroadcastReceiver() {

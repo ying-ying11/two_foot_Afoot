@@ -10,13 +10,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
 import android.util.Log
-import com.flyn.sarcopenia_project.toHexString
 import kotlinx.coroutines.*
 
 class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     companion object {
-        const val DEVICE_NAME = "DEVICE_NAME"
         const val DATA = "BLE_DATA"
         private const val TAG = "Bluetooth Le Service"
     }
@@ -46,6 +44,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 gatt.requestMtu(247)
+                gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
             }
             else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 broadcastUpdate(BleAction.GATT_DISCONNECTED)
@@ -56,16 +55,22 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                characteristicUUIDList.clear()
-                val uuids = setOf(UUIDList.ADC_RAW.uuid, UUIDList.IMU_ACC.uuid, UUIDList.IMU_GYR.uuid)
-                gatt.services.forEach { service ->
-                    service.characteristics.forEach { characteristic ->
-                        if (uuids.contains(characteristic.uuid)) {
-                            characteristicUUIDList.add(characteristic)
-                        }
-                    }
+                characteristicSet.clear()
+                gatt.getService(UUIDList.ADC.uuid)?.let { service ->
+                    characteristicSet.add(service.getCharacteristic(UUIDList.EMG_LEFT.uuid))
+                    characteristicSet.add(service.getCharacteristic(UUIDList.EMG_RIGHT.uuid))
+                }?: run {
+                    Log.e(TAG, "ADC service not found!")
+                    gatt.disconnect()
                 }
-                Log.d(TAG, "uuid list size: ${characteristicUUIDList.size}")
+                gatt.getService(UUIDList.IMU.uuid)?.let { service ->
+                    characteristicSet.add(service.getCharacteristic(UUIDList.IMU_ACC.uuid))
+                    characteristicSet.add(service.getCharacteristic(UUIDList.IMU_GYR.uuid))
+                }?: run {
+                    Log.e(TAG, "IMU service not found!")
+                    gatt.disconnect()
+                }
+                Log.d(TAG, "uuid list size: ${characteristicSet.size}")
                 broadcastUpdate(BleAction.GATT_CONNECTED)
             }
             else Log.w(TAG, "onServicesDiscovered received: $status")
@@ -77,16 +82,11 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             when (characteristic.uuid) {
-                UUIDList.ADC_RAW.uuid -> broadcastUpdate(BleAction.EMG_DATA_AVAILABLE, characteristic)
+                UUIDList.EMG_LEFT.uuid -> broadcastUpdate(BleAction.EMG_LEFT_DATA_AVAILABLE, characteristic)
+                UUIDList.EMG_RIGHT.uuid -> broadcastUpdate(BleAction.EMG_RIGHT_DATA_AVAILABLE, characteristic)
                 UUIDList.IMU_ACC.uuid -> broadcastUpdate(BleAction.ACC_DATA_AVAILABLE, characteristic)
                 UUIDList.IMU_GYR.uuid -> broadcastUpdate(BleAction.GYR_DATA_AVAILABLE, characteristic)
             }
-            if (bluetoothAdapter == null) {
-                Log.w(TAG, "BluetoothAdapter not initialized")
-                return
-            }
-            bluetoothGatt?.readCharacteristic(characteristic)
-//            Log.d(TAG, "readCharacteristic ${characteristic.uuid}: ${characteristic.value.toHexString()}")
         }
 
     }
@@ -96,21 +96,15 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = BleCommand.contentAction(intent.action)?: return
             when (action) {
-                BleCommand.DEVICE_NAME_CHANGE -> {
-                    deviceName = intent.getStringExtra(DEVICE_NAME)?: return
-                    if (!isScanning && bluetoothGatt == null) {
-                        bluetoothScan(true)
-                    }
-                }
                 BleCommand.NOTIFICATION_ON -> {
                     Log.d(TAG, "Notification ON")
-                    characteristicUUIDList.forEach {
+                    characteristicSet.forEach {
                         enableNotification(it, true)
                     }
                 }
                 BleCommand.NOTIFICATION_OFF -> {
                     Log.d(TAG, "Notification OFF")
-                    characteristicUUIDList.forEach {
+                    characteristicSet.forEach {
                         enableNotification(it, false)
                     }
                 }
@@ -125,10 +119,10 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     private var isScanning = false
     private var waitingNotification = false
-    private var deviceName = "Flyn Bluetooth Device"
+    private var deviceName = "Sarcopenia Project"
     private var deviceAddress = ""
     private var bluetoothGatt: BluetoothGatt? = null
-    private var characteristicUUIDList = mutableSetOf<BluetoothGattCharacteristic>()
+    private var characteristicSet = mutableSetOf<BluetoothGattCharacteristic>()
 
     private fun bluetoothScan(enable: Boolean) {
         val scanner = bluetoothAdapter?.bluetoothLeScanner?: run {
@@ -206,7 +200,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         unregisterReceiver(commandReceiver)
         if (isScanning) bluetoothScan(false)
         if (bluetoothAdapter == null) return
-        characteristicUUIDList.forEach {
+        characteristicSet.forEach {
             enableNotification(it, false)
         }
         bluetoothGatt?.disconnect()

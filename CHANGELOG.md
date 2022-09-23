@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### [Added]
 - pop up device scan result & connect the selected device
+- adding sampling rate on screen
+### [Changed]
+- use existing cloud database lib
+- save file function
+
+## [0.2.0] - 2022-09-22
 ### [Changed]
 - display two channel EMG signal
-- use existing cloud database lib
 
 ## [0.1.0] - 2022-09-19
 ### [Added]
