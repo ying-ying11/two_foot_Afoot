@@ -30,6 +30,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
 
     inner class ViewHolder(val view: View): RecyclerView.ViewHolder(view) {
 
+        // TODO add file path
         val selected: CheckBox = view.findViewById(R.id.file_select_box)
         val nameText: TextView = view.findViewById(R.id.file_name)
         val detailText: TextView = view.findViewById(R.id.file_detail)

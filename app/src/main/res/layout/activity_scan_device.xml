@@ -30,8 +30,10 @@
         tools:layout_editor_absoluteY="1dp" />
 
     <Button
+        android:id="@+id/scan_device_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:onClick="scanButton"
         android:text="@string/stop_scan_button"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

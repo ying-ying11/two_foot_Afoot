@@ -85,17 +85,6 @@ class MainActivity: AppCompatActivity() {
         }
         requestMultiplePermissions.launch(permissionList.toTypedArray())
 
-        (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).run {
-            if (!adapter.isEnabled) {
-                registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                    if (result.resultCode == RESULT_OK) {
-                        Log.e("Activity result", "OK")
-                        // There are no request codes
-                    }
-                }.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-            }
-        }
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -112,6 +101,7 @@ class MainActivity: AppCompatActivity() {
             registerReceiver(bluetoothConnectReceiver, this)
         }
 
+        // TODO move out to function
         dataViewerButton.setOnClickListener {
             startActivity(Intent(this, DataViewer::class.java))
         }
