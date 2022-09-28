@@ -1,9 +1,14 @@
 <resources>
-    <string name="app_name">sarcopenia_project</string>
+    <string name="app_name">Sarcopenia Project</string>
 
     <string name="connecting_button">裝置連線</string>
     <string name="data_viewer_button">資料檢視</string>
     <string name="file_manager_button">檔案管理</string>
+
+    <!--    scan device activity    -->
+    <string name="scan_device_hint">掃描到的裝置</string>
+    <string name="stop_scan_button">停止掃描</string>
+    <string name="rescan_button">重新掃描</string>
 
     <string name="emg_tab">EMG</string>
     <string name="acc_tab">ACC</string>
