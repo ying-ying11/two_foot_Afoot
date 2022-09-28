@@ -2,6 +2,7 @@ package com.flyn.sarcopenia_project
 
 import android.Manifest
 import android.annotation.TargetApi
+import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
@@ -13,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,23 +23,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.flyn.sarcopenia_project.file.FileManagerActivity
 import com.flyn.sarcopenia_project.service.BluetoothLeService
 import com.flyn.sarcopenia_project.service.BleAction
+import com.flyn.sarcopenia_project.utils.FileManager
 import com.flyn.sarcopenia_project.viewer.DataViewer
 import java.io.File
 
 class MainActivity: AppCompatActivity() {
-
-    companion object {
-        internal lateinit var APP_DIR: File
-        private const val REQUEST_ENABLE_BT = 2
-    }
-
-    enum class PermissionList(val permission: String) {
-        FINE_LOCATION_PERMISSION(Manifest.permission.ACCESS_FINE_LOCATION),
-        @RequiresApi(Build.VERSION_CODES.S)
-        BLUETOOTH_SCAN(Manifest.permission.BLUETOOTH_SCAN),
-        @RequiresApi(Build.VERSION_CODES.S)
-        BLUETOOTH_CONNECT(Manifest.permission.BLUETOOTH_CONNECT)
-    }
 
     private val bluetoothConnectReceiver = object: BroadcastReceiver() {
 
@@ -56,10 +46,9 @@ class MainActivity: AppCompatActivity() {
 
     @TargetApi(Build.VERSION_CODES.M)
     private val requestMultiplePermissions =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions : Map<String, Boolean> ->
-            // Do something if some permissions granted or denied
-            permissions.entries.forEach { entry ->
-                if (!entry.value) {
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            permissions -> permissions.forEach { (_, value) ->
+                if (!value) {
                     Intent().run {
                         action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
                         data = Uri.fromParts("package", packageName, null)
@@ -88,19 +77,22 @@ class MainActivity: AppCompatActivity() {
         }
 
         /* 確認是否已開啟取得手機位置功能以及權限 */
-        val permissionList = arrayListOf(PermissionList.FINE_LOCATION_PERMISSION)
+        val permissionList = arrayListOf(Manifest.permission.ACCESS_FINE_LOCATION)
         // Android 12+ require bluetooth scan & bluetooth connect permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permissionList.add(PermissionList.BLUETOOTH_SCAN)
-            permissionList.add(PermissionList.BLUETOOTH_CONNECT)
+            permissionList.add(Manifest.permission.BLUETOOTH_SCAN)
+            permissionList.add(Manifest.permission.BLUETOOTH_CONNECT)
         }
-        requestMultiplePermissions.launch(permissionList.map { it.permission }.toTypedArray())
+        requestMultiplePermissions.launch(permissionList.toTypedArray())
 
         (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).run {
             if (!adapter.isEnabled) {
-                Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE).also {
-                    startActivityForResult(it, REQUEST_ENABLE_BT)
-                }
+                registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                    if (result.resultCode == RESULT_OK) {
+                        Log.e("Activity result", "OK")
+                        // There are no request codes
+                    }
+                }.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
             }
         }
 
@@ -128,7 +120,8 @@ class MainActivity: AppCompatActivity() {
             startActivity(Intent(this, FileManagerActivity::class.java))
         }
 
-        APP_DIR = filesDir
+        FileManager.APP_DIR = filesDir
+        FileManager.CACHE_DIR = cacheDir
     }
 
     override fun onDestroy() {

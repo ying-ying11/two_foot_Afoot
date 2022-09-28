@@ -5,17 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.flyn.sarcopenia_project.R
+import com.flyn.sarcopenia_project.file.cache_file.EmgCacheFile
+import com.flyn.sarcopenia_project.file.cache_file.ImuCacheFile
 import com.flyn.sarcopenia_project.service.BleAction
 import com.flyn.sarcopenia_project.service.BleCommand
 import com.flyn.sarcopenia_project.service.BluetoothLeService
-import com.flyn.sarcopenia_project.toHexString
-import com.flyn.sarcopenia_project.toShortArray
+import com.flyn.sarcopenia_project.utils.FileManager
+import com.flyn.sarcopenia_project.utils.toShortArray
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -23,9 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
 import java.util.*
 import com.google.android.material.snackbar.Snackbar
 import kotlin.math.min
@@ -36,7 +34,7 @@ class DataViewer: AppCompatActivity() {
     companion object {
         private const val TAG = "Data Viewer"
         private val tagName = listOf("EMG", "ACC", "GYR")
-        private val dataFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss'.csv'", Locale("zh", "tw"))
+
     }
 
     private val emg = DataPage(0f, 4096f, "Left", "Right") { "%.2f V".format(emgTransform(it)) }
@@ -78,8 +76,13 @@ class DataViewer: AppCompatActivity() {
                         val x = it.toShortArray()[0]
                         val y = it.toShortArray()[1]
                         val z = it.toShortArray()[2]
+                        GlobalScope.launch(Dispatchers.IO) {
+                            FileManager.appendRecordData(FileManager.IMU_ACC_FILE_NAME, ImuCacheFile(time, x, y, z))
+                        }
                         val text = getString(R.string.acc_describe, accTransform(x), accTransform(y), accTransform(z))
                         acc.addData(text, x, y, z)
+                        accCount++
+                        acc.updateSamplingRate(accCount)
                     }
                 }
                 BleAction.GYR_DATA_AVAILABLE.name -> {
@@ -87,8 +90,13 @@ class DataViewer: AppCompatActivity() {
                         val x = it.toShortArray()[0]
                         val y = it.toShortArray()[1]
                         val z = it.toShortArray()[2]
+                        GlobalScope.launch(Dispatchers.IO) {
+                            FileManager.appendRecordData(FileManager.IMU_GYR_FILE_NAME, ImuCacheFile(time, x, y, z))
+                        }
                         val text = getString(R.string.gyr_describe, gyrTransform(x), gyrTransform(y), gyrTransform(z))
                         gyr.addData(text, x, y, z)
+                        gyrCount++
+                        gyr.updateSamplingRate(gyrCount)
                     }
                 }
             }
@@ -96,6 +104,10 @@ class DataViewer: AppCompatActivity() {
 
     }
 
+    val time: Long
+        get() = Date().time - startTime
+
+    private val startTime = Date().time
     private val tabSelector: TabLayout by lazy { findViewById(R.id.data_viewer_tab) }
     private val pager: ViewPager2 by lazy { findViewById(R.id.data_viewer)}
     private val saveButton: FloatingActionButton by lazy { findViewById(R.id.data_viewer_save_button) }
@@ -103,6 +115,10 @@ class DataViewer: AppCompatActivity() {
     private lateinit var emgLeftData: ShortArray
     private lateinit var emgRightData: ShortArray
     private var emgState: Int = 0
+    private var emgLeftCount = 0
+    private var emgRightCount = 0
+    private var accCount = 0
+    private var gyrCount = 0
 
     private fun emgTransform(value: Short): Float = value.toFloat() / 4095f * 3.6f
     private fun emgTransform(value: Float): Float = value / 4095f * 3.6f
@@ -115,37 +131,25 @@ class DataViewer: AppCompatActivity() {
 
     private fun addEmgData() {
         if (emgState != 0x3) return
+        GlobalScope.launch(Dispatchers.IO) {
+            FileManager.appendRecordData(FileManager.EMG_LEFT_FILE_NAME, EmgCacheFile(time, emgLeftData))
+            FileManager.appendRecordData(FileManager.EMG_RIGHT_FILE_NAME, EmgCacheFile(time, emgRightData))
+        }
         for (i in 0 until min(emgLeftData.size, emgRightData.size)) {
             val left = emgLeftData[i]
             val right = emgRightData[i]
             val text = getString(R.string.emg_describe, emgTransform(left), emgTransform(right))
             emg.addData(text, left, right)
         }
+        emgLeftCount += emgLeftData.size
+        emgRightCount += emgRightData.size
+        emg.updateSamplingRate(min(emgLeftCount, emgRightCount))
         emgState = 0
     }
 
     private suspend fun saveFile() {
         withContext(Dispatchers.IO) {
-            val dir = File(filesDir, "record")
-            if (!dir.exists()) dir.mkdir()
-            val filePath = dataFormat.format(Date()).replace(":", "-")
-            FileOutputStream(File(dir, filePath)).use { out ->
-                emg.getData().apply {
-                    out.write("EMG,%d\n".format(size).toByteArray())
-                }.forEach { (time, data) ->
-                    out.write("%d,%d\n".format(time, data[0]).toByteArray())
-                }
-                acc.getData().apply {
-                    out.write("ACC,%d\n".format(size).toByteArray())
-                }.forEach { (time, data) ->
-                    out.write("%d,%d,%d,%d\n".format(time, data[0], data[1], data[2]).toByteArray())
-                }
-                gyr.getData().apply {
-                    out.write("GYR,%d\n".format(size).toByteArray())
-                }.forEach { (time, data) ->
-                    out.write("%d,%d,%d,%d\n".format(time, data[0], data[1], data[2]).toByteArray())
-                }
-            }
+            FileManager.writeRecordFile(emgLeftCount, emgRightCount, accCount, gyrCount)
         }
     }
 
@@ -182,6 +186,10 @@ class DataViewer: AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         sendBroadcast(Intent(BleCommand.NOTIFICATION_OFF.name))
+        unregisterReceiver(dataReceiver)
+        GlobalScope.launch(Dispatchers.IO) {
+            FileManager.removeTempRecord()
+        }
     }
 
 }

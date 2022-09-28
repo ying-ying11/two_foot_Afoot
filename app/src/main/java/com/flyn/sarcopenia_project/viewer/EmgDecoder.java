@@ -8,7 +8,7 @@ class EmgDecoder {
 
     static short[] decode(byte[] raw) {
         int packageNum = raw[0] & 0xFF;
-        Log.d(TAG, "package number: " + packageNum);
+//        Log.d(TAG, "package number: " + packageNum);
 
         int size = raw[1] & 0xFF;
         short[] result = new short[size];

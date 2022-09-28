@@ -29,9 +29,6 @@ class DataPage(private val min: Float, private val max: Float,
         private val colorSet = setOf(Color.RED, Color.GREEN, Color.BLUE)
     }
 
-    private val dataLists = ConcurrentHashMap<Long, Array<Short>>()
-    private val startTime = Date().time
-
     private lateinit var chart: LineChart
     private lateinit var samplingRateText: TextView
     private lateinit var describeText: TextView
@@ -39,21 +36,23 @@ class DataPage(private val min: Float, private val max: Float,
     private var prevTime = 0L
 
     fun addData(describe: String, vararg values: Short) {
-        val time = Date().time - startTime
-        dataLists[time] = values.toTypedArray()
         if (context == null) return
+        if (requireActivity() !is DataViewer) return
+        val time = (requireActivity() as DataViewer).time
         if (time - prevTime > 100) {
             prevTime = time
-            addDataToChart(time, dataLists[time]!!)
-            requireActivity().runOnUiThread {
-                val samplingRate: Double = dataLists.size / time.toDouble() * 1000;
-                samplingRateText.text = getString(R.string.sampling_rate, samplingRate)
-                describeText.text = describe
-            }
+            addDataToChart(time, values.toTypedArray())
+            describeText.text = describe
         }
     }
 
-    fun getData(): Map<Long, Array<Short>> = dataLists.toSortedMap()
+    fun updateSamplingRate(dataAmount: Int) {
+        if (context == null) return
+        if (requireActivity() !is DataViewer) return
+        val time = (requireActivity() as DataViewer).time
+        val samplingRate: Double = dataAmount / time.toDouble() * 1000
+        samplingRateText.text = getString(R.string.sampling_rate, samplingRate)
+    }
 
     private fun addDataToChart(time: Long, value: Array<Short>) {
         var pos = 0f

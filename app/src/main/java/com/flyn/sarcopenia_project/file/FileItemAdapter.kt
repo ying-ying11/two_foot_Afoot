@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.flyn.sarcopenia_project.MainActivity
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.net.Client
+import com.flyn.sarcopenia_project.utils.FileManager
 import io.netty.channel.ConnectTimeoutException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -99,7 +100,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     @SuppressLint("NotifyDataSetChanged")
     fun scanFiles() {
         fileList.clear()
-        val dir = File(MainActivity.APP_DIR, "record")
+        val dir = File(FileManager.APP_DIR, "record")
         if (!dir.exists()) return
         dir.listFiles { file ->
             file.extension == "csv"
@@ -111,7 +112,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     }
 
     fun deleteFile() {
-        val dir = File(MainActivity.APP_DIR, "record")
+        val dir = File(FileManager.APP_DIR, "record")
         fileList.filterIndexed { index, _ ->
             selectedList.contains(index)
         }.forEach { file ->
@@ -122,7 +123,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     }
 
     fun cloudSave() {
-        val dir = File(MainActivity.APP_DIR, "record")
+        val dir = File(FileManager.APP_DIR, "record")
         val files = fileList.filterIndexed { index, _ ->
             selectedList.contains(index)
         }.map {

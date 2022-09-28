@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - adding sampling rate on screen
 ### [Changed]
 - use existing cloud database lib
+
+## [0.2.1] - 2022-09-28
+### [Changed]
 - save file function
 
 ## [0.2.0] - 2022-09-22
