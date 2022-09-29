@@ -6,10 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### [Added]
-- pop up device scan result & connect the selected device
 - adding sampling rate on screen
 ### [Changed]
 - use existing cloud database lib
+
+## [0.2.2] - 2022-09-29
+### [Added]
+- new activity can scanning device & connecting the selected device
 
 ## [0.2.1] - 2022-09-28
 ### [Changed]
