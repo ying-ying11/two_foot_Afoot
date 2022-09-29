@@ -8,6 +8,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -17,11 +18,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.flyn.sarcopenia_project.MainActivity
 import com.flyn.sarcopenia_project.R
+import com.flyn.sarcopenia_project.utils.ExtraManager
+import com.flyn.sarcopenia_project.viewer.DataViewer
 
 class ScanDeviceActivity: AppCompatActivity() {
 
@@ -80,6 +85,12 @@ class ScanDeviceActivity: AppCompatActivity() {
         deviceList.layoutManager = LinearLayoutManager(this)
         deviceList.adapter = ScannedListAdapter
 
+        // check device has BLE feature
+        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            Toast.makeText(this, R.string.ble_not_support, Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, MainActivity::class.java))
+        }
+
         (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).run {
             if (!adapter.isEnabled) {
                 registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -90,6 +101,7 @@ class ScanDeviceActivity: AppCompatActivity() {
                 }.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
             }
         }
+        scanDevice(true)
     }
 
     private object ScannedListAdapter: RecyclerView.Adapter<ScannedListAdapter.ScannedHolder>() {
@@ -135,7 +147,10 @@ class ScanDeviceActivity: AppCompatActivity() {
 
             init {
                 view.setOnClickListener {
-                    // TODO go to data viewer passing device address
+                    Intent(context, DataViewer::class.java).let {
+                        it.putExtra(ExtraManager.DEVICE_ADDRESS, deviceAddressText.text)
+                        context.startActivity(it)
+                    }
                 }
             }
 

@@ -1,31 +1,27 @@
 package com.flyn.sarcopenia_project.viewer
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
 import android.os.Bundle
+import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.flyn.sarcopenia_project.MainActivity
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.file.cache_file.EmgCacheFile
 import com.flyn.sarcopenia_project.file.cache_file.ImuCacheFile
 import com.flyn.sarcopenia_project.service.BleAction
-import com.flyn.sarcopenia_project.service.BleCommand
 import com.flyn.sarcopenia_project.service.BluetoothLeService
+import com.flyn.sarcopenia_project.utils.ExtraManager
 import com.flyn.sarcopenia_project.utils.FileManager
 import com.flyn.sarcopenia_project.utils.toShortArray
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.util.*
-import com.google.android.material.snackbar.Snackbar
 import kotlin.math.min
 
 
@@ -34,7 +30,6 @@ class DataViewer: AppCompatActivity() {
     companion object {
         private const val TAG = "Data Viewer"
         private val tagName = listOf("EMG", "ACC", "GYR")
-
     }
 
     private val emg = DataPage(0f, 4096f, "Left", "Right") { "%.2f V".format(emgTransform(it)) }
@@ -57,6 +52,17 @@ class DataViewer: AppCompatActivity() {
 
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
+                BleAction.GATT_CONNECTED.name -> {
+                    service.enableNotification(true)
+                }
+                BleAction.GATT_DISCONNECTED.name -> {
+                    // reconnect
+                    GlobalScope.launch(Dispatchers.Default) {
+                        while (!service.connect(address)) {
+                            delay(100)
+                        }
+                    }
+                }
                 BleAction.EMG_LEFT_DATA_AVAILABLE.name -> {
                     intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
                         emgLeftData = EmgDecoder.decode(it)
@@ -104,6 +110,19 @@ class DataViewer: AppCompatActivity() {
 
     }
 
+    private val serviceCallback = object: ServiceConnection {
+
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            service = (binder as BluetoothLeService.BleServiceBinder).getService()
+            service.connect(address)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            service.enableNotification(false)
+        }
+
+    }
+
     val time: Long
         get() = Date().time - startTime
 
@@ -112,6 +131,8 @@ class DataViewer: AppCompatActivity() {
     private val pager: ViewPager2 by lazy { findViewById(R.id.data_viewer)}
     private val saveButton: FloatingActionButton by lazy { findViewById(R.id.data_viewer_save_button) }
 
+    private lateinit var address: String
+    private lateinit var service: BluetoothLeService
     private lateinit var emgLeftData: ShortArray
     private lateinit var emgRightData: ShortArray
     private var emgState: Int = 0
@@ -156,6 +177,13 @@ class DataViewer: AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_data_viewer)
+
+        intent.getStringExtra(ExtraManager.DEVICE_ADDRESS)?.let {
+            address = it
+        }?:run {
+            startActivity(Intent(this, MainActivity::class.java))
+        }
+
         pager.adapter = pageAdapter
         TabLayoutMediator(tabSelector, pager) { tab, position ->
             tab.text = tagName[position]
@@ -173,6 +201,8 @@ class DataViewer: AppCompatActivity() {
         }
 
         IntentFilter().run {
+            addAction(BleAction.GATT_CONNECTED.name)
+            addAction(BleAction.GATT_DISCONNECTED.name)
             addAction(BleAction.EMG_LEFT_DATA_AVAILABLE.name)
             addAction(BleAction.EMG_RIGHT_DATA_AVAILABLE.name)
             addAction(BleAction.ACC_DATA_AVAILABLE.name)
@@ -180,13 +210,16 @@ class DataViewer: AppCompatActivity() {
             registerReceiver(dataReceiver, this)
         }
 
-        sendBroadcast(Intent(BleCommand.NOTIFICATION_ON.name))
+        bindService(
+            Intent(this, BluetoothLeService::class.java), serviceCallback,
+            BIND_AUTO_CREATE)
+
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        sendBroadcast(Intent(BleCommand.NOTIFICATION_OFF.name))
         unregisterReceiver(dataReceiver)
+        unbindService(serviceCallback)
         GlobalScope.launch(Dispatchers.IO) {
             FileManager.removeTempRecord()
         }

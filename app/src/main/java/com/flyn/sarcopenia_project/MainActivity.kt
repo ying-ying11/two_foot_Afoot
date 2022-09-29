@@ -23,26 +23,12 @@ import androidx.appcompat.app.AppCompatActivity
 import com.flyn.sarcopenia_project.file.FileManagerActivity
 import com.flyn.sarcopenia_project.service.BluetoothLeService
 import com.flyn.sarcopenia_project.service.BleAction
+import com.flyn.sarcopenia_project.service.ScanDeviceActivity
 import com.flyn.sarcopenia_project.utils.FileManager
 import com.flyn.sarcopenia_project.viewer.DataViewer
 import java.io.File
 
 class MainActivity: AppCompatActivity() {
-
-    private val bluetoothConnectReceiver = object: BroadcastReceiver() {
-
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                BleAction.GATT_CONNECTED.name -> {
-                    dataViewerButton.isEnabled = true
-                }
-                BleAction.GATT_DISCONNECTED.name -> {
-                    dataViewerButton.isEnabled = false
-                }
-            }
-        }
-
-    }
 
     @TargetApi(Build.VERSION_CODES.M)
     private val requestMultiplePermissions =
@@ -58,7 +44,6 @@ class MainActivity: AppCompatActivity() {
             }
         }
 
-    private val connectingButton: Button by lazy { findViewById(R.id.main_device_connecting) }
     private val dataViewerButton: Button by lazy { findViewById(R.id.main_data_viewer) }
     private val fileManagerButton: Button by lazy { findViewById(R.id.main_file_manager) }
 
@@ -93,17 +78,9 @@ class MainActivity: AppCompatActivity() {
 
         checkPermission()
 
-        startService(Intent(this, BluetoothLeService::class.java))
-
-        IntentFilter().run {
-            addAction(BleAction.GATT_CONNECTED.name)
-            addAction(BleAction.GATT_DISCONNECTED.name)
-            registerReceiver(bluetoothConnectReceiver, this)
-        }
-
         // TODO move out to function
         dataViewerButton.setOnClickListener {
-            startActivity(Intent(this, DataViewer::class.java))
+            startActivity(Intent(this, ScanDeviceActivity::class.java))
         }
 
         fileManagerButton.setOnClickListener {
@@ -112,12 +89,6 @@ class MainActivity: AppCompatActivity() {
 
         FileManager.APP_DIR = filesDir
         FileManager.CACHE_DIR = cacheDir
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        stopService(Intent(this, BluetoothLeService::class.java))
-        unregisterReceiver(bluetoothConnectReceiver)
     }
 
 }
