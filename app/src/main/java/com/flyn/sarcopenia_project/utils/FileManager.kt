@@ -22,11 +22,18 @@ object FileManager {
     private val lock = ReentrantLock()
 
     internal lateinit var APP_DIR: File
-    internal lateinit var CACHE_DIR: File
+    internal val RECORDING_DIR: File
+        get() {
+            return File(APP_DIR, "sarcopenia_record")
+        }
+    internal val TEMP_DIR: File
+        get() {
+            return File(APP_DIR, "temp_record")
+        }
 
     fun appendRecordData(fileName: String, data: CacheFile) {
         lock.lock()
-        val dir = File(APP_DIR, "temp_record")
+        val dir = TEMP_DIR
         if (!dir.exists()) dir.mkdir()
         FileOutputStream(File(dir, fileName), true).use { out ->
             out.write(data.toCsv().toByteArray())
@@ -36,13 +43,13 @@ object FileManager {
 
     fun removeTempRecord() {
         lock.lock()
-        File(APP_DIR, "temp_record").deleteRecursively()
+        TEMP_DIR.deleteRecursively()
         lock.unlock()
     }
 
     fun writeRecordFile(leftCount: Int, rightCount: Int, accCount: Int, gyrCount: Int) {
         lock.lock()
-        val dir = File(APP_DIR, "sarcopenia_record")
+        val dir = RECORDING_DIR
         if (!dir.exists()) dir.mkdir()
         val filePath = dataFormat.format(Date()).replace(":", "-")
         FileOutputStream(File(dir, filePath)).use { out ->
@@ -62,8 +69,7 @@ object FileManager {
     }
 
     private fun copyCacheFile(out: FileOutputStream, fileName: String) {
-        val dir = File(APP_DIR, "temp_record")
-        File(dir, fileName).let { file ->
+        File(TEMP_DIR, fileName).let { file ->
             if (!file.exists()) return
             FileInputStream(file).use { input ->
                 val buffer = ByteArray(1024)

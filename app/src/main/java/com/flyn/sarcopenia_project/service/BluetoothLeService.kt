@@ -8,6 +8,7 @@ import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.*
+import java.util.concurrent.locks.ReentrantLock
 
 class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
@@ -62,7 +63,9 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            waitingNotification = false
+            lock.lock()
+            condition.signal()
+            lock.unlock()
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
@@ -80,8 +83,9 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     }
 
-    private var waitingNotification = false
     private var deviceAddress = ""
+    private var lock = ReentrantLock()
+    private var condition = lock.newCondition()
     private var bluetoothGatt: BluetoothGatt? = null
     private var characteristicSet = mutableSetOf<BluetoothGattCharacteristic>()
 
@@ -99,19 +103,17 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     fun enableNotification(enable: Boolean) {
         Log.i(TAG, "Notification is $enable")
-        GlobalScope.launch {
+        GlobalScope.launch(Dispatchers.Default) {
             characteristicSet.forEach {  characteristic ->
-                // TODO use ReentrantLock condition instead
-                while (waitingNotification) {
-                    delay(1)
-                }
-                waitingNotification = true
+                lock.lock()
                 characteristic.getDescriptor(UUIDList.CCC.uuid).run {
                     value = if (enable) BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                     else BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
                     bluetoothGatt?.writeDescriptor(this)
                 }
                 bluetoothGatt?.setCharacteristicNotification(characteristic, enable)
+                condition.await()
+                lock.unlock()
             }
         }
     }

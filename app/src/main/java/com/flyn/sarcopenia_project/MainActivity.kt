@@ -88,7 +88,6 @@ class MainActivity: AppCompatActivity() {
         }
 
         FileManager.APP_DIR = filesDir
-        FileManager.CACHE_DIR = cacheDir
     }
 
 }

@@ -21,5 +21,10 @@
     <string name="sampling_rate">Sampling Rate: %.2f</string>
 
     <string name="file_detail">Size: %s</string>
+    <string name="end_recording">結束採樣</string>
     <string name="check_saving">是否儲存檔案</string>
+    <string name="save">儲存</string>
+    <string name="cancel">取消</string>
+    <string name="sava_completed">檔案儲存完畢</string>
+
 </resources>

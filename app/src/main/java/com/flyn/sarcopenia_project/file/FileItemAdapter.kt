@@ -101,7 +101,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     @SuppressLint("NotifyDataSetChanged")
     fun scanFiles() {
         fileList.clear()
-        val dir = File(FileManager.APP_DIR, "record")
+        val dir = FileManager.RECORDING_DIR
         if (!dir.exists()) return
         dir.listFiles { file ->
             file.extension == "csv"
@@ -113,7 +113,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     }
 
     fun deleteFile() {
-        val dir = File(FileManager.APP_DIR, "record")
+        val dir = FileManager.RECORDING_DIR
         fileList.filterIndexed { index, _ ->
             selectedList.contains(index)
         }.forEach { file ->
@@ -124,7 +124,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     }
 
     fun cloudSave() {
-        val dir = File(FileManager.APP_DIR, "record")
+        val dir = FileManager.RECORDING_DIR
         val files = fileList.filterIndexed { index, _ ->
             selectedList.contains(index)
         }.map {

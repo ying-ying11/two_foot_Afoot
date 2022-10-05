@@ -3,6 +3,8 @@ package com.flyn.sarcopenia_project.viewer
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
+import android.widget.Button
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -16,6 +18,7 @@ import com.flyn.sarcopenia_project.service.BluetoothLeService
 import com.flyn.sarcopenia_project.utils.ExtraManager
 import com.flyn.sarcopenia_project.utils.FileManager
 import com.flyn.sarcopenia_project.utils.toShortArray
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -129,7 +132,7 @@ class DataViewer: AppCompatActivity() {
     private val startTime = Date().time
     private val tabSelector: TabLayout by lazy { findViewById(R.id.data_viewer_tab) }
     private val pager: ViewPager2 by lazy { findViewById(R.id.data_viewer)}
-    private val saveButton: FloatingActionButton by lazy { findViewById(R.id.data_viewer_save_button) }
+    private val saveButton: Button by lazy { findViewById(R.id.data_viewer_save_button) }
 
     private lateinit var address: String
     private lateinit var service: BluetoothLeService
@@ -168,9 +171,12 @@ class DataViewer: AppCompatActivity() {
         emgState = 0
     }
 
-    private suspend fun saveFile() {
-        withContext(Dispatchers.IO) {
+    private fun saveFile() {
+        GlobalScope.launch(Dispatchers.IO) {
             FileManager.writeRecordFile(emgLeftCount, emgRightCount, accCount, gyrCount)
+            this@DataViewer.runOnUiThread {
+                Toast.makeText(this@DataViewer.applicationContext, R.string.sava_completed, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -190,14 +196,16 @@ class DataViewer: AppCompatActivity() {
         }.attach()
 
         saveButton.setOnClickListener {
-            Snackbar.make(findViewById(R.id.data_viewer_layout), getString(R.string.check_saving), Snackbar.LENGTH_LONG).run {
-                setAction("確認") {
-                    GlobalScope.launch {
-                        saveFile()
-                    }
+            MaterialAlertDialogBuilder(this).apply {
+                setMessage(R.string.check_saving)
+                setPositiveButton(R.string.save) { dialog, which ->
+                    saveFile()
+                    startActivity(Intent(this@DataViewer, MainActivity::class.java))
                 }
-                show()
-            }
+                setNegativeButton(R.string.cancel) { dialog, which ->
+                    startActivity(Intent(this@DataViewer, MainActivity::class.java))
+                }
+            }.show()
         }
 
         IntentFilter().run {
