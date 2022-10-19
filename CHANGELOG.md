@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [Changed]
 - use existing cloud database lib
 
+## [0.2.3] - 2022-10-19
+### [Changed]
+write file in file writing service
+
 ## [0.2.2] - 2022-09-29
 ### [Added]
 - adding sampling rate on screen

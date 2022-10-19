@@ -17,10 +17,7 @@ import com.flyn.sarcopenia_project.service.BleAction
 import com.flyn.sarcopenia_project.service.BluetoothLeService
 import com.flyn.sarcopenia_project.utils.ExtraManager
 import com.flyn.sarcopenia_project.utils.FileManager
-import com.flyn.sarcopenia_project.utils.toShortArray
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.*
@@ -67,45 +64,43 @@ class DataViewer: AppCompatActivity() {
                     }
                 }
                 BleAction.EMG_LEFT_DATA_AVAILABLE.name -> {
-                    intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        emgLeftData = EmgDecoder.decode(it)
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let {
+                        emgLeftData = it
                         emgState = emgState or 0x1
                         addEmgData()
                     }
                 }
                 BleAction.EMG_RIGHT_DATA_AVAILABLE.name -> {
-                    intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        emgRightData = EmgDecoder.decode(it)
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let {
+                        emgRightData = it
                         emgState = emgState or 0x2
                         addEmgData()
                     }
                 }
                 BleAction.ACC_DATA_AVAILABLE.name -> {
-                    intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        val x = it.toShortArray()[0]
-                        val y = it.toShortArray()[1]
-                        val z = it.toShortArray()[2]
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let { data ->
                         GlobalScope.launch(Dispatchers.IO) {
-                            FileManager.appendRecordData(FileManager.IMU_ACC_FILE_NAME, ImuCacheFile(time, x, y, z))
+                            val file = ImuCacheFile(time, data[0], data[1], data[2])
+                            FileManager.appendRecordData(FileManager.IMU_ACC_FILE_NAME, file)
                         }
-                        val text = getString(R.string.acc_describe, accTransform(x), accTransform(y), accTransform(z))
-                        acc.addData(text, x, y, z)
-                        accCount++
-                        acc.updateSamplingRate(accCount)
+                        val text =  data.map { accTransform(it) }.let {
+                            getString(R.string.acc_describe, it[0], it[0], it[0])
+                        }
+                        acc.addData(text, data[0], data[1], data[2])
+                        acc.updateSamplingRate(++accCount)
                     }
                 }
                 BleAction.GYR_DATA_AVAILABLE.name -> {
-                    intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        val x = it.toShortArray()[0]
-                        val y = it.toShortArray()[1]
-                        val z = it.toShortArray()[2]
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let { data ->
                         GlobalScope.launch(Dispatchers.IO) {
-                            FileManager.appendRecordData(FileManager.IMU_GYR_FILE_NAME, ImuCacheFile(time, x, y, z))
+                            val file = ImuCacheFile(time, data[0], data[1], data[2])
+                            FileManager.appendRecordData(FileManager.IMU_GYR_FILE_NAME, file)
                         }
-                        val text = getString(R.string.gyr_describe, gyrTransform(x), gyrTransform(y), gyrTransform(z))
-                        gyr.addData(text, x, y, z)
-                        gyrCount++
-                        gyr.updateSamplingRate(gyrCount)
+                        val text = data.map { gyrTransform(it) }.let {
+                            getString(R.string.gyr_describe, it[0], it[1], it[2])
+                        }
+                        gyr.addData(text, data[0], data[1], data[2])
+                        gyr.updateSamplingRate(++gyrCount)
                     }
                 }
             }

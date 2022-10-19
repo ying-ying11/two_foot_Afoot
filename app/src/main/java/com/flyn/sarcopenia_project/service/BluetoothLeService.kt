@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import com.flyn.sarcopenia_project.utils.toShortArray
 import kotlinx.coroutines.*
 import java.util.concurrent.locks.ReentrantLock
 
@@ -70,10 +71,22 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             when (characteristic.uuid) {
-                UUIDList.EMG_LEFT.uuid -> broadcastUpdate(BleAction.EMG_LEFT_DATA_AVAILABLE, characteristic)
-                UUIDList.EMG_RIGHT.uuid -> broadcastUpdate(BleAction.EMG_RIGHT_DATA_AVAILABLE, characteristic)
-                UUIDList.IMU_ACC.uuid -> broadcastUpdate(BleAction.ACC_DATA_AVAILABLE, characteristic)
-                UUIDList.IMU_GYR.uuid -> broadcastUpdate(BleAction.GYR_DATA_AVAILABLE, characteristic)
+                UUIDList.EMG_LEFT.uuid -> {
+                    val data = EmgDecoder.decode(characteristic.value)
+                    broadcastUpdate(BleAction.EMG_LEFT_DATA_AVAILABLE, data)
+                }
+                UUIDList.EMG_RIGHT.uuid -> {
+                    val data = EmgDecoder.decode(characteristic.value)
+                    broadcastUpdate(BleAction.EMG_RIGHT_DATA_AVAILABLE, data)
+                }
+                UUIDList.IMU_ACC.uuid -> {
+                    val data = characteristic.value.toShortArray()
+                    broadcastUpdate(BleAction.ACC_DATA_AVAILABLE, data)
+                }
+                UUIDList.IMU_GYR.uuid -> {
+                    val data = characteristic.value.toShortArray()
+                    broadcastUpdate(BleAction.GYR_DATA_AVAILABLE, data)
+                }
             }
         }
 
@@ -118,14 +131,9 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         }
     }
 
-    private fun broadcastUpdate(action: BleAction, characteristic: BluetoothGattCharacteristic? = null) {
+    private fun broadcastUpdate(action: BleAction, data: ShortArray? = null) {
         val intent = Intent(action.name)
-        if (characteristic != null) {
-            val data = characteristic.value
-            if (data != null && data.isNotEmpty()) {
-                intent.putExtra(DATA, data)
-            }
-        }
+        if (data != null) intent.putExtra(DATA, data)
         sendBroadcast(intent)
     }
 

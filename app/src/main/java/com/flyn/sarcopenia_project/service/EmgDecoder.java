@@ -1,4 +1,4 @@
-package com.flyn.sarcopenia_project.viewer;
+package com.flyn.sarcopenia_project.service;
 
 import android.util.Log;
 
