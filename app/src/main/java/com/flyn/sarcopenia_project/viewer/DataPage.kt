@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.flyn.sarcopenia_project.R
+import com.flyn.sarcopenia_project.utils.TimeManager
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
@@ -18,7 +19,6 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
 class DataPage(private val min: Float, private val max: Float,
                private vararg val names: String,
@@ -33,25 +33,24 @@ class DataPage(private val min: Float, private val max: Float,
     private lateinit var samplingRateText: TextView
     private lateinit var describeText: TextView
     private var hasInit = false
+    private var dataAmount = 0
     private var prevTime = 0L
 
     fun addData(describe: String, vararg values: Short) {
         if (context == null) return
         if (requireActivity() !is DataViewer) return
-        val time = (requireActivity() as DataViewer).time
+        val time = TimeManager.time
         if (time - prevTime > 100) {
             prevTime = time
             addDataToChart(time, values.toTypedArray())
             describeText.text = describe
         }
-    }
-
-    fun updateSamplingRate(dataAmount: Int) {
-        if (context == null) return
-        if (requireActivity() !is DataViewer) return
-        val time = (requireActivity() as DataViewer).time
         val samplingRate: Double = dataAmount / time.toDouble() * 1000
         samplingRateText.text = getString(R.string.sampling_rate, samplingRate)
+    }
+
+    fun addDataCount(amount: Int) {
+        dataAmount += amount
     }
 
     private fun addDataToChart(time: Long, value: Array<Short>) {

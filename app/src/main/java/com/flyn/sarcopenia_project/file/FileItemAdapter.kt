@@ -24,8 +24,8 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
 
     companion object {
         const val FILE_DATA = "FileData"
-        private const val HOST = "140.135.101.61"
-//        private const val HOST = "140.135.101.71"
+//        private const val HOST = "140.135.101.61"
+        private const val HOST = "140.135.101.71"
     }
 
     inner class ViewHolder(val view: View): RecyclerView.ViewHolder(view) {

@@ -2,31 +2,23 @@ package com.flyn.sarcopenia_project
 
 import android.Manifest
 import android.annotation.TargetApi
-import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
-import android.content.BroadcastReceiver
-import android.content.Context
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
+import android.view.KeyEvent
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.flyn.sarcopenia_project.file.FileManagerActivity
-import com.flyn.sarcopenia_project.service.BluetoothLeService
-import com.flyn.sarcopenia_project.service.BleAction
 import com.flyn.sarcopenia_project.service.ScanDeviceActivity
 import com.flyn.sarcopenia_project.utils.FileManager
-import com.flyn.sarcopenia_project.viewer.DataViewer
-import java.io.File
+
 
 class MainActivity: AppCompatActivity() {
 
@@ -88,6 +80,22 @@ class MainActivity: AppCompatActivity() {
         }
 
         FileManager.APP_DIR = filesDir
+
+        val name: CharSequence = "Sarcopenia project"
+        val description = "Sarcopenia project description"
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel("Sarcopenia project", name, importance)
+        channel.description = description
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            finishAffinity()
+            return false
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
 }
