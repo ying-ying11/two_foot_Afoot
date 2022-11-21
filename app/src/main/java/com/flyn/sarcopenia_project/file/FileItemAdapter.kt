@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.flyn.sarcopenia_project.MainActivity
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.net.Client
+import com.flyn.sarcopenia_project.utils.FileManager
 import io.netty.channel.ConnectTimeoutException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -23,12 +24,13 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
 
     companion object {
         const val FILE_DATA = "FileData"
-        private const val HOST = "140.135.101.61"
-//        private const val HOST = "140.135.101.71"
+//        private const val HOST = "140.135.101.61"
+        private const val HOST = "140.135.101.71"
     }
 
     inner class ViewHolder(val view: View): RecyclerView.ViewHolder(view) {
 
+        // TODO add file path
         val selected: CheckBox = view.findViewById(R.id.file_select_box)
         val nameText: TextView = view.findViewById(R.id.file_name)
         val detailText: TextView = view.findViewById(R.id.file_detail)
@@ -99,7 +101,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     @SuppressLint("NotifyDataSetChanged")
     fun scanFiles() {
         fileList.clear()
-        val dir = File(MainActivity.APP_DIR, "record")
+        val dir = FileManager.RECORDING_DIR
         if (!dir.exists()) return
         dir.listFiles { file ->
             file.extension == "csv"
@@ -111,7 +113,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     }
 
     fun deleteFile() {
-        val dir = File(MainActivity.APP_DIR, "record")
+        val dir = FileManager.RECORDING_DIR
         fileList.filterIndexed { index, _ ->
             selectedList.contains(index)
         }.forEach { file ->
@@ -122,7 +124,7 @@ class FileItemAdapter: RecyclerView.Adapter<FileItemAdapter.ViewHolder>() {
     }
 
     fun cloudSave() {
-        val dir = File(MainActivity.APP_DIR, "record")
+        val dir = FileManager.RECORDING_DIR
         val files = fileList.filterIndexed { index, _ ->
             selectedList.contains(index)
         }.map {

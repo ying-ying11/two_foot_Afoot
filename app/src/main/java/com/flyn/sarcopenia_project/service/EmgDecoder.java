@@ -1,15 +1,14 @@
-package com.flyn.sarcopenia_project.viewer;
+package com.flyn.sarcopenia_project.service;
+
+import android.util.Log;
 
 class EmgDecoder {
 
-    static int prevPackageNum = 0;
+    final static String TAG = "EMG Decoder";
 
     static short[] decode(byte[] raw) {
         int packageNum = raw[0] & 0xFF;
-        if (packageNum != prevPackageNum + 1 && !(packageNum == 0 && prevPackageNum == 255)) {
-            System.err.println("Missing package!!");
-        }
-        prevPackageNum = packageNum;
+//        Log.d(TAG, "package number: " + packageNum);
 
         int size = raw[1] & 0xFF;
         short[] result = new short[size];

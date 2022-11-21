@@ -12,7 +12,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:orientation="vertical"
-        app:constraint_referenced_ids="main_data_viewer,main_file_manager,main_device_connecting"
+        app:constraint_referenced_ids="main_data_viewer,main_file_manager"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,17 +21,9 @@
     </androidx.constraintlayout.helper.widget.Flow>
 
     <Button
-        android:id="@+id/main_device_connecting"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/connecting_button"
-        android:textSize="20sp" />
-
-    <Button
         android:id="@+id/main_data_viewer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:enabled="false"
         android:text="@string/data_viewer_button"
         android:textSize="20sp"
         tools:layout_editor_absoluteX="16dp"

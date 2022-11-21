@@ -1,18 +1,30 @@
 <resources>
-    <string name="app_name">sarcopenia_project</string>
+    <string name="app_name">Sarcopenia Project</string>
 
     <string name="connecting_button">裝置連線</string>
     <string name="data_viewer_button">資料檢視</string>
     <string name="file_manager_button">檔案管理</string>
 
+    <!--    scan device activity    -->
+    <string name="ble_not_support">此裝置不支援BLE功能</string>
+    <string name="scan_device_hint">掃描到的裝置</string>
+    <string name="stop_scan_button">停止掃描</string>
+    <string name="rescan_button">重新掃描</string>
+
     <string name="emg_tab">EMG</string>
     <string name="acc_tab">ACC</string>
     <string name="gyr_tab">GYR</string>
 
-    <string name="emg_describe">EMG: %f V</string>
+    <string name="emg_describe">left: %.2f V\nright: %.2f V</string>
     <string name="acc_describe">x: %.2f g\ny: %.2f g\nz: %.2f g</string>
     <string name="gyr_describe">x: %.2f rad/s\ny: %.2f rad/s\nz: %.2f rad/s\n</string>
+    <string name="sampling_rate">Sampling Rate: %.2f</string>
 
     <string name="file_detail">Size: %s</string>
+    <string name="end_recording">結束採樣</string>
     <string name="check_saving">是否儲存檔案</string>
+    <string name="save">儲存</string>
+    <string name="cancel">取消</string>
+    <string name="sava_completed">檔案儲存完畢</string>
+
 </resources>

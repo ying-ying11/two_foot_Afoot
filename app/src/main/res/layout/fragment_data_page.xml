@@ -19,16 +19,27 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
+            android:id="@+id/sampling_rate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textSize="20sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/file_viewer_emg_chart"
+            app:layout_constraintBottom_toTopOf="@id/data_descriptor" />
+
+        <TextView
             android:id="@+id/data_descriptor"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
             android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/file_viewer_emg_chart" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/sampling_rate"
+            app:layout_constraintBottom_toBottomOf="parent"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

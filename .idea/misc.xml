@@ -3,13 +3,17 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/drawable/background_device_info.xml" value="0.38229166666666664" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/drawable/click_effect.xml" value="0.38229166666666664" />
+        <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/drawable/ic_launcher_background.xml" value="0.38229166666666664" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/drawable/round_button.xml" value="0.38229166666666664" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/activity_data_viewer.xml" value="0.36614583333333334" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/activity_file_data_viewer.xml" value="0.36614583333333334" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/activity_file_manager.xml" value="0.36614583333333334" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/activity_main.xml" value="0.2957427536231884" />
+        <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/activity_scan_device.xml" value="0.36614583333333334" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/fragment_data_page.xml" value="0.36614583333333334" />
+        <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/fragment_device_info.xml" value="0.36614583333333334" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/fragment_emg.xml" value="0.36614583333333334" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/fragment_emg_viewer.xml" value="0.36614583333333334" />
         <entry key="..\:/Flyn/Android/sarcopenia_project/app/src/main/res/layout/fragment_file_data.xml" value="0.36614583333333334" />

@@ -8,11 +8,11 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="light_gray">#FFCCCCCC</color>
+    <color name="gray">#FF888888</color>
 
 
     <color name="shion">#8F77B5</color>
     <color name="usu">#B28FCE</color>
     <color name="kokimurasaki">#4A225D</color>
 
-    <color name="pinkypinky">#EEA9A9</color>
 </resources>

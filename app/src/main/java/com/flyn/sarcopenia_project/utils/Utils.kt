@@ -1,4 +1,4 @@
-package com.flyn.sarcopenia_project
+package com.flyn.sarcopenia_project.utils
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.flyn.sarcopenia_project.R
+import com.flyn.sarcopenia_project.utils.TimeManager
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.components.YAxis
@@ -18,7 +19,6 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
 class DataPage(private val min: Float, private val max: Float,
                private vararg val names: String,
@@ -29,26 +29,29 @@ class DataPage(private val min: Float, private val max: Float,
         private val colorSet = setOf(Color.RED, Color.GREEN, Color.BLUE)
     }
 
-    private val dataLists = ConcurrentHashMap<Long, Array<Short>>()
-    private val startTime = Date().time
-
     private lateinit var chart: LineChart
+    private lateinit var samplingRateText: TextView
     private lateinit var describeText: TextView
     private var hasInit = false
+    private var dataAmount = 0
     private var prevTime = 0L
 
     fun addData(describe: String, vararg values: Short) {
-        val time = Date().time - startTime
-        dataLists[time] = values.toTypedArray()
-        if (!hasInit) return
+        if (context == null) return
+        if (requireActivity() !is DataViewer) return
+        val time = TimeManager.time
         if (time - prevTime > 100) {
             prevTime = time
-            addDataToChart(time, dataLists[time]!!)
+            addDataToChart(time, values.toTypedArray())
+            describeText.text = describe
         }
-        describeText.text = describe
+        val samplingRate: Double = dataAmount / time.toDouble() * 1000
+        samplingRateText.text = getString(R.string.sampling_rate, samplingRate)
     }
 
-    fun getData(): Map<Long, Array<Short>> = dataLists.toSortedMap()
+    fun addDataCount(amount: Int) {
+        dataAmount += amount
+    }
 
     private fun addDataToChart(time: Long, value: Array<Short>) {
         var pos = 0f
@@ -121,6 +124,7 @@ class DataPage(private val min: Float, private val max: Float,
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_data_page, container, false)
         chart = view.findViewById(R.id.file_viewer_emg_chart)
+        samplingRateText = view.findViewById(R.id.sampling_rate)
         describeText = view.findViewById(R.id.data_descriptor)
         initChart()
         initDataSet()

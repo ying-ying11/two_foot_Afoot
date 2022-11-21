@@ -1,44 +1,44 @@
 package com.flyn.sarcopenia_project.viewer
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
 import android.os.Bundle
+import android.os.IBinder
+import android.view.KeyEvent
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.flyn.sarcopenia_project.MainActivity
 import com.flyn.sarcopenia_project.R
-import com.flyn.sarcopenia_project.service.BleAction
-import com.flyn.sarcopenia_project.service.BleCommand
 import com.flyn.sarcopenia_project.service.BluetoothLeService
-import com.flyn.sarcopenia_project.toHexString
-import com.flyn.sarcopenia_project.toShortArray
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.flyn.sarcopenia_project.utils.ActionManager
+import com.flyn.sarcopenia_project.utils.ExtraManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
+import kotlinx.coroutines.*
 import java.util.*
-import com.google.android.material.snackbar.Snackbar
-
-
 
 
 class DataViewer: AppCompatActivity() {
 
     companion object {
+        private const val TAG = "Data Viewer"
         private val tagName = listOf("EMG", "ACC", "GYR")
-        private val dataFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss'.csv'", Locale("zh", "tw"))
+        private val dataFilter = IntentFilter().apply {
+            addAction(ActionManager.EMG_LEFT_DATA_AVAILABLE)
+            addAction(ActionManager.EMG_RIGHT_DATA_AVAILABLE)
+            addAction(ActionManager.ACC_DATA_AVAILABLE)
+            addAction(ActionManager.GYR_DATA_AVAILABLE)
+        }
+        private val connectFilter = IntentFilter().apply {
+            addAction(ActionManager.GATT_CONNECTED)
+            addAction(ActionManager.GATT_DISCONNECTED)
+        }
     }
 
-    private val emg = DataPage(0f, 1024f, "EMG") { "%.2f V".format(emgTransform(it)) }
+    private val emg = DataPage(0f, 4096f, "Left", "Right") { "%.2f V".format(emgTransform(it)) }
 
     private val acc = DataPage(-32768f, 32768f, "x", "y", "z") { "%.2f g".format(accTransform(it)) }
 
@@ -54,139 +54,180 @@ class DataViewer: AppCompatActivity() {
 
     }
 
+    private val connectReceiver = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context, intent: Intent) {
+            when(intent.action) {
+                ActionManager.GATT_CONNECTED -> service.enableNotification(true)
+                ActionManager.GATT_DISCONNECTED -> {
+                    // reconnect
+                    GlobalScope.launch(Dispatchers.Default) {
+                        while (!service.connect(address)) {
+                            delay(100)
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
     private val dataReceiver = object: BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                BleAction.EMG_DATA_AVAILABLE.name -> {
-                    intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        EmgDecoder.decode(it)?.forEach { data ->
-                            val text = getString(R.string.emg_describe, emgTransform(data.toFloat()))
-                            emg.addData(text, data)
+                ActionManager.EMG_LEFT_DATA_AVAILABLE -> {
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let {
+                        emgLeftData = it
+                        emgState = emgState or 0x1
+                        addEmgData()
+                    }
+                }
+                ActionManager.EMG_RIGHT_DATA_AVAILABLE -> {
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let {
+                        emgRightData = it
+                        emgState = emgState or 0x2
+                        addEmgData()
+                    }
+                }
+                ActionManager.ACC_DATA_AVAILABLE -> {
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let { data ->
+                        val text =  data.map { accTransform(it) }.let {
+                            getString(R.string.acc_describe, it[0], it[0], it[0])
                         }
-                    }?: return
+                        acc.addDataCount(1)
+                        acc.addData(text, data[0], data[1], data[2])
+                    }
                 }
-                BleAction.ACC_DATA_AVAILABLE.name -> {
-                    intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        val x = it.toShortArray()[0]
-                        val y = it.toShortArray()[1]
-                        val z = it.toShortArray()[2]
-                        val text = getString(R.string.acc_describe, accTransform(x.toFloat()), accTransform(y.toFloat()), accTransform(z.toFloat()))
-                        acc.addData(text, x, y, z)
-                    }?: return
-                }
-                BleAction.GYR_DATA_AVAILABLE.name -> {
-                    intent.getByteArrayExtra(BluetoothLeService.DATA)?.let {
-                        val x = it.toShortArray()[0]
-                        val y = it.toShortArray()[1]
-                        val z = it.toShortArray()[2]
-                        val text = getString(R.string.gyr_describe, gyrTransform(x.toFloat()), gyrTransform(y.toFloat()), gyrTransform(z.toFloat()))
-                        gyr.addData(text, x, y, z)
-                    }?: return
+                ActionManager.GYR_DATA_AVAILABLE -> {
+                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let { data ->
+                        val text = data.map { gyrTransform(it) }.let {
+                            getString(R.string.gyr_describe, it[0], it[1], it[2])
+                        }
+                        gyr.addDataCount(1)
+                        gyr.addData(text, data[0], data[1], data[2])
+                    }
                 }
             }
+        }
+
+    }
+
+    private val serviceCallback = object: ServiceConnection {
+
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            service = (binder as BluetoothLeService.BleServiceBinder).getService()
+            service.connect(address)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            service.enableNotification(false)
         }
 
     }
 
     private val tabSelector: TabLayout by lazy { findViewById(R.id.data_viewer_tab) }
     private val pager: ViewPager2 by lazy { findViewById(R.id.data_viewer)}
-    private val saveButton: FloatingActionButton by lazy { findViewById(R.id.data_viewer_save_button) }
-
-    private fun emgTransform(value: Float): Float = value / 1023f * 3.6f
-    private fun accTransform(value: Float): Float = value / 32767f * 2f
-    private fun gyrTransform(value: Float): Float = value / 32767f * 250f
-
-    private fun emgDecode(raw: ByteArray): ShortArray? {
-        print("Data length: ${raw.size} - ")
-        raw.forEach {
-            print("${it.toUByte()} ")
-        }
-        println()
-        val size = raw[0].toUByte().toInt()
-        val result = ShortArray(size)
-        val checkSum = raw.filterIndexed {
-                index, _ -> index == raw.size - 1
-        }.map { value -> value.toUByte() }.sum() and 0xFFu
-        if (checkSum != raw[raw.size - 1].toUInt()) {
-            println("Check sum error")
-            return null
-        }
-        var loc = 1
-        for (i in 0 until size) {
-            var highBit: Int
-            var lowBit: Int
-            if (i % 2 == 1) {
-                highBit = raw[loc].toInt() and 0x0F
-                lowBit = raw[loc + 1].toInt()
-                loc += 3
+    private val saveButton: Button by lazy { findViewById(R.id.data_viewer_save_button) }
+    private val finishDialog by lazy {
+        MaterialAlertDialogBuilder(this).apply {
+            setMessage(R.string.check_saving)
+            setPositiveButton(R.string.save) { _, _ ->
+                Intent(this@DataViewer, FileRecordService::class.java).run {
+                    putExtra(ExtraManager.NEED_SAVE_FILE, true)
+                    startService(this)
+                }
+                stopService(Intent(this@DataViewer, FileRecordService::class.java))
+                startActivity(Intent(this@DataViewer, MainActivity::class.java))
+                finish()
             }
-            else {
-                highBit = (raw[loc].toInt() shr 4) and 0x0F
-                lowBit = raw[loc + 1].toInt()
+            setNegativeButton(R.string.cancel) { _, _ ->
+                stopService(Intent(this@DataViewer, FileRecordService::class.java))
+                startActivity(Intent(this@DataViewer, MainActivity::class.java))
+                finish()
             }
-            result[i] = ((highBit shl 8) or lowBit).toShort()
         }
-        return result
     }
 
-    private suspend fun saveFile() {
-        withContext(Dispatchers.IO) {
-            val dir = File(filesDir, "record")
-            if (!dir.exists()) dir.mkdir()
-            val filePath = dataFormat.format(Date()).replace(":", "-")
-            FileOutputStream(File(dir, filePath)).use { out ->
-                emg.getData().apply {
-                    out.write("EMG,%d\n".format(size).toByteArray())
-                }.forEach { (time, data) ->
-                    out.write("%d,%d\n".format(time, data[0]).toByteArray())
-                }
-                acc.getData().apply {
-                    out.write("ACC,%d\n".format(size).toByteArray())
-                }.forEach { (time, data) ->
-                    out.write("%d,%d,%d,%d\n".format(time, data[0], data[1], data[2]).toByteArray())
-                }
-                gyr.getData().apply {
-                    out.write("GYR,%d\n".format(size).toByteArray())
-                }.forEach { (time, data) ->
-                    out.write("%d,%d,%d,%d\n".format(time, data[0], data[1], data[2]).toByteArray())
-                }
-            }
+    private lateinit var address: String
+    private lateinit var service: BluetoothLeService
+    private lateinit var emgLeftData: ShortArray
+    private lateinit var emgRightData: ShortArray
+    private var emgState: Int = 0
+
+    private fun emgTransform(value: Short): Float = value.toFloat() / 4095f * 3.6f
+    private fun emgTransform(value: Float): Float = value / 4095f * 3.6f
+
+    private fun accTransform(value: Short): Float = value.toFloat() / 32767f * 2f
+    private fun accTransform(value: Float): Float = value / 32767f * 2f
+
+    private fun gyrTransform(value: Short): Float = value.toFloat() / 32767f * 250f
+    private fun gyrTransform(value: Float): Float = value / 32767f * 250f
+
+    private fun addEmgData() {
+        if (emgState != 0x3) return
+        emg.addDataCount(100)
+        for (i in 0 until 100) {
+            val left = emgLeftData[i]
+            val right = emgRightData[i]
+            val text = getString(R.string.emg_describe, emgTransform(left), emgTransform(right))
+            emg.addData(text, left, right)
         }
+        emgState = 0
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_data_viewer)
+
+        intent.getStringExtra(ExtraManager.DEVICE_ADDRESS)?.let {
+            address = it
+        }?:run {
+            startActivity(Intent(this, MainActivity::class.java))
+        }
+
         pager.adapter = pageAdapter
         TabLayoutMediator(tabSelector, pager) { tab, position ->
             tab.text = tagName[position]
         }.attach()
 
         saveButton.setOnClickListener {
-            Snackbar.make(findViewById(R.id.data_viewer_layout), getString(R.string.check_saving), Snackbar.LENGTH_LONG).run {
-                setAction("確認") {
-                    GlobalScope.launch {
-                        saveFile()
-                    }
-                }
-                show()
-            }
+            finishDialog.show()
         }
 
-        IntentFilter().run {
-            addAction(BleAction.EMG_DATA_AVAILABLE.name)
-            addAction(BleAction.ACC_DATA_AVAILABLE.name)
-            addAction(BleAction.GYR_DATA_AVAILABLE.name)
-            registerReceiver(dataReceiver, this)
-        }
+        registerReceiver(connectReceiver, connectFilter)
 
-        sendBroadcast(Intent(BleCommand.NOTIFICATION_ON.name))
+        bindService(
+            Intent(this, BluetoothLeService::class.java), serviceCallback,
+            BIND_AUTO_CREATE
+        )
+
+        startService(Intent(this, FileRecordService::class.java))
+
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        sendBroadcast(Intent(BleCommand.NOTIFICATION_OFF.name))
+        unregisterReceiver(connectReceiver)
+        unbindService(serviceCallback)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        registerReceiver(dataReceiver, dataFilter)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(dataReceiver)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            finishDialog.show()
+            return false
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
 }
