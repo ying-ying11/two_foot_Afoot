@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.flyn.sarcopenia_project.file.FileManagerActivity
 import com.flyn.sarcopenia_project.service.ScanDeviceActivity
 import com.flyn.sarcopenia_project.utils.FileManager
+import com.flyn.sarcopenia_project.viewer.DeviceSelectActivity
 
 
 class MainActivity: AppCompatActivity() {
@@ -72,7 +73,7 @@ class MainActivity: AppCompatActivity() {
 
         // TODO move out to function
         dataViewerButton.setOnClickListener {
-            startActivity(Intent(this, ScanDeviceActivity::class.java))
+            startActivity(Intent(this, DeviceSelectActivity::class.java))
         }
 
         fileManagerButton.setOnClickListener {

@@ -19,6 +19,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.*
 import java.util.*
+import kotlin.math.min
 
 
 class DataViewer: AppCompatActivity() {
@@ -166,8 +167,9 @@ class DataViewer: AppCompatActivity() {
 
     private fun addEmgData() {
         if (emgState != 0x3) return
-        emg.addDataCount(100)
-        for (i in 0 until 100) {
+        val len = min(emgLeftData.size, emgRightData.size)
+        emg.addDataCount(len)
+        for (i in 0 until len) {
             val left = emgLeftData[i]
             val right = emgRightData[i]
             val text = getString(R.string.emg_describe, emgTransform(left), emgTransform(right))

@@ -25,7 +25,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
             super.onMtuChanged(gatt, mtu, status)
             Log.d(TAG, "BLE mtu change: $mtu")
             Log.d(TAG, "Connected to GATT server.")
-            Log.d(TAG, "Attempting to start service discovery: ${bluetoothGatt?.discoverServices()}")
+            Log.d(TAG, "Attempting to start service discovery: ${gatt?.discoverServices()}")
         }
 
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
@@ -41,24 +41,11 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                characteristicSet.clear()
-                gatt.getService(UUIDList.ADC.uuid)?.let { service ->
-                    characteristicSet.add(service.getCharacteristic(UUIDList.EMG_LEFT.uuid))
-                    characteristicSet.add(service.getCharacteristic(UUIDList.EMG_RIGHT.uuid))
-                }?: run {
-                    Log.e(TAG, "ADC service not found!")
+                if (!checkService(gatt)) {
+                    Log.e(TAG, "service not found!")
                     gatt.disconnect()
                     return
                 }
-                gatt.getService(UUIDList.IMU.uuid)?.let { service ->
-                    characteristicSet.add(service.getCharacteristic(UUIDList.IMU_ACC.uuid))
-                    characteristicSet.add(service.getCharacteristic(UUIDList.IMU_GYR.uuid))
-                }?: run {
-                    Log.e(TAG, "IMU service not found!")
-                    gatt.disconnect()
-                    return
-                }
-                Log.d(TAG, "uuid list size: ${characteristicSet.size}")
                 broadcastUpdate(ActionManager.GATT_CONNECTED)
             }
             else Log.w(TAG, "onServicesDiscovered received: $status")
@@ -72,19 +59,19 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             when (characteristic.uuid) {
-                UUIDList.EMG_LEFT.uuid -> {
+                UUIDList.EMG_LEFT -> {
                     val data = EmgDecoder.decode(characteristic.value)
                     broadcastUpdate(ActionManager.EMG_LEFT_DATA_AVAILABLE, data)
                 }
-                UUIDList.EMG_RIGHT.uuid -> {
+                UUIDList.EMG_RIGHT -> {
                     val data = EmgDecoder.decode(characteristic.value)
                     broadcastUpdate(ActionManager.EMG_RIGHT_DATA_AVAILABLE, data)
                 }
-                UUIDList.IMU_ACC.uuid -> {
+                UUIDList.IMU_ACC -> {
                     val data = characteristic.value.toShortArray()
                     broadcastUpdate(ActionManager.ACC_DATA_AVAILABLE, data)
                 }
-                UUIDList.IMU_GYR.uuid -> {
+                UUIDList.IMU_GYR -> {
                     val data = characteristic.value.toShortArray()
                     broadcastUpdate(ActionManager.GYR_DATA_AVAILABLE, data)
                 }
@@ -96,36 +83,45 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
     private val bluetoothAdapter: BluetoothAdapter by lazy {
         (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     }
+    private val devices = mutableMapOf<String, DeviceInfo>()
 
-    private var deviceAddress = ""
     private var lock = ReentrantLock()
     private var condition = lock.newCondition()
-    private var bluetoothGatt: BluetoothGatt? = null
-    private var characteristicSet = mutableSetOf<BluetoothGattCharacteristic>()
 
     fun connect(address: String): Boolean {
-        if (address == deviceAddress && bluetoothGatt != null) {
+        if (devices.containsKey(address)) {
             Log.d(TAG, "BLE reconnect")
-            return bluetoothGatt!!.connect()
+            return devices[address]!!.gatt.connect()
         }
         val device = bluetoothAdapter.getRemoteDevice(address)?: return false
-        bluetoothGatt = device.connectGatt(this, false, gattCallback)
-        deviceAddress = address
+        devices[address] = DeviceInfo(device.connectGatt(this, false, gattCallback))
         Log.d(TAG, "BLE connect")
         return true
     }
 
     fun enableNotification(enable: Boolean) {
+        devices.forEach { (_, device) ->
+            enableNotification(device.gatt, enable)
+        }
+    }
+
+    private fun enableNotification(gatt: BluetoothGatt, enable: Boolean) {
         Log.i(TAG, "Notification is $enable")
         GlobalScope.launch(Dispatchers.Default) {
+            val characteristicSet = mutableSetOf(
+                gatt.getService(UUIDList.ADC).getCharacteristic(UUIDList.EMG_LEFT),
+                gatt.getService(UUIDList.ADC).getCharacteristic(UUIDList.EMG_RIGHT),
+                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_ACC),
+                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_GYR),
+            )
             characteristicSet.forEach {  characteristic ->
                 lock.lock()
-                characteristic.getDescriptor(UUIDList.CCC.uuid).run {
+                characteristic.getDescriptor(UUIDList.CCC).run {
                     value = if (enable) BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                     else BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
-                    bluetoothGatt?.writeDescriptor(this)
+                    gatt.writeDescriptor(this)
                 }
-                bluetoothGatt?.setCharacteristicNotification(characteristic, enable)
+                gatt.setCharacteristicNotification(characteristic, enable)
                 condition.await()
                 lock.unlock()
             }
@@ -138,13 +134,34 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         sendBroadcast(intent)
     }
 
+    private fun checkService(gatt: BluetoothGatt): Boolean {
+        var result = gatt.services.map { it.uuid }
+            .containsAll(listOf(UUIDList.ADC, UUIDList.IMU))
+        if (!result) return false
+        result = gatt.getService(UUIDList.ADC).characteristics.map { it.uuid }
+            .containsAll(listOf(UUIDList.EMG_LEFT, UUIDList.EMG_RIGHT))
+        if (!result) return false
+        result = gatt.getService(UUIDList.IMU).characteristics.map { it.uuid }
+            .containsAll(listOf(UUIDList.IMU_ACC, UUIDList.IMU_GYR))
+        return result
+    }
+
+    private fun disconnect() {
+        devices.forEach { (_, device) ->
+            device.gatt.let {
+                enableNotification(it, false)
+                it.disconnect()
+            }
+        }
+        devices.clear()
+    }
+
     override fun onBind(p0: Intent?): IBinder {
         return BleServiceBinder()
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        enableNotification(false)
-        bluetoothGatt?.disconnect()
+        disconnect()
         Log.d(TAG, "BLE disconnect")
         return super.onUnbind(intent)
     }
@@ -155,6 +172,10 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
             return this@BluetoothLeService
         }
 
+    }
+
+    private class DeviceInfo(val gatt: BluetoothGatt) {
+        var isConnected = false
     }
 
 }

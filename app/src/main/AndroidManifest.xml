@@ -38,6 +38,7 @@
         <activity android:name=".service.ScanDeviceActivity" android:noHistory="true" />
         <activity android:name=".file.FileManagerActivity" />
         <activity android:name=".file.FileDataViewer" />
+        <activity android:name=".viewer.DeviceSelectActivity" />
 
         <service
             android:name=".service.BluetoothLeService"
