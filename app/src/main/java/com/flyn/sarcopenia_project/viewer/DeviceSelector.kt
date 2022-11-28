@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.flyn.sarcopenia_project.R
@@ -16,8 +17,12 @@ class DeviceSelector: ConstraintLayout {
     private val nameText: TextView by lazy { findViewById(R.id.selector_name) }
     private val addressText: TextView by lazy { findViewById(R.id.selector_address) }
     private val hintText: TextView by lazy { findViewById(R.id.selector_hint) }
+    private val disconnectButton: Button by lazy {findViewById(R.id.selector_disconnect_button)}
 
-    private var hasDevice = false
+    var address = ""
+        private set
+    var hasDevice = false
+        private set
 
     constructor(context: Context): super(context) {
         init(context, null)
@@ -38,31 +43,37 @@ class DeviceSelector: ConstraintLayout {
             val attr = context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.text))
             titleText.text = attr.getString(0)
         }
-        addDevice.setOnClickListener {
-            if (!hasDevice) {
-                // TODO add device
-                addDevice(UUID.randomUUID().toString(), UUID.randomUUID().toString())
-            }
-            else {
-                removeDevice()
-            }
-        }
     }
 
     fun addDevice(name: String, address: String) {
         hasDevice = true
+        this.address = address
         nameText.text = name
         nameText.visibility = View.VISIBLE
         addressText.text = address
         addressText.visibility = View.VISIBLE
+        disconnectButton.visibility = View.VISIBLE
         hintText.visibility = View.GONE
     }
 
     fun removeDevice() {
         hasDevice = false
+        this.address = ""
         nameText.visibility = View.GONE
         addressText.visibility = View.GONE
+        disconnectButton.visibility = View.GONE
         hintText.visibility = View.VISIBLE
+    }
+
+    fun setDisconnectCallback(callback: () -> Unit) {
+        disconnectButton.setOnClickListener {
+            callback()
+            removeDevice()
+        }
+    }
+
+    override fun setOnClickListener(l: OnClickListener?) {
+        addDevice.setOnClickListener(l)
     }
 
 }

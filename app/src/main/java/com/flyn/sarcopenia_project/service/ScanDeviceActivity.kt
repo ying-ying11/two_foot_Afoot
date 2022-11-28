@@ -6,11 +6,14 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
@@ -51,8 +54,20 @@ class ScanDeviceActivity: AppCompatActivity() {
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
         (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     }
+    private val serviceConnection = object: ServiceConnection {
+
+        override fun onServiceConnected(componentName: ComponentName?, binder: IBinder?) {
+            service = (binder as BluetoothLeService.BleServiceBinder).getService()
+        }
+
+        override fun onServiceDisconnected(componentName: ComponentName) {
+            service = null
+        }
+
+    }
 
     private var isScanning = false
+    private var service: BluetoothLeService? = null
 
     fun scanButton(view : View) {
         scanDevice(!isScanning)
@@ -84,6 +99,10 @@ class ScanDeviceActivity: AppCompatActivity() {
 
         deviceList.layoutManager = LinearLayoutManager(this)
         deviceList.adapter = ScannedListAdapter
+        ScannedListAdapter.clickItemCallback { address ->
+            service?.connect(address)
+            finish()
+        }
 
         // check device has BLE feature
         if (!packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -104,9 +123,22 @@ class ScanDeviceActivity: AppCompatActivity() {
         scanDevice(true)
     }
 
+    override fun onResume() {
+        super.onResume()
+        Intent(this, BluetoothLeService::class.java).let {
+            bindService(it ,serviceConnection, BIND_AUTO_CREATE)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unbindService(serviceConnection)
+    }
+
     private object ScannedListAdapter: RecyclerView.Adapter<ScannedListAdapter.ScannedHolder>() {
 
         private val deviceList = arrayListOf<BluetoothDevice>()
+        private var callback: ((String) -> Unit)? = null
 
         fun addDevice(device: BluetoothDevice) {
             deviceList.map { it.address }.let {
@@ -122,10 +154,15 @@ class ScanDeviceActivity: AppCompatActivity() {
             notifyDataSetChanged()
         }
 
+        fun clickItemCallback(callback: (String) -> Unit) {
+            this.callback = callback
+        }
+
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScannedHolder {
-            return ScannedHolder(parent.context,
+            return ScannedHolder(
                 LayoutInflater.from(parent.context)
-                .inflate(R.layout.fragment_device_info, parent, false)
+                .inflate(R.layout.fragment_device_info, parent, false),
+                callback
             )
         }
 
@@ -140,16 +177,16 @@ class ScanDeviceActivity: AppCompatActivity() {
 
         override fun getItemCount(): Int = deviceList.size
 
-        private class ScannedHolder(context: Context, view: View): RecyclerView.ViewHolder(view) {
+        private class ScannedHolder(view: View, callback: ((String) -> Unit)? = null)
+            : RecyclerView.ViewHolder(view) {
 
             val deviceNameText: TextView = view.findViewById(R.id.device_name)
             val deviceAddressText: TextView = view.findViewById(R.id.device_address)
 
             init {
                 view.setOnClickListener {
-                    Intent(context, DataViewer::class.java).let {
-                        it.putExtra(ExtraManager.DEVICE_ADDRESS, deviceAddressText.text)
-                        context.startActivity(it)
+                    if (callback != null) {
+                        callback(deviceAddressText.text as String)
                     }
                 }
             }

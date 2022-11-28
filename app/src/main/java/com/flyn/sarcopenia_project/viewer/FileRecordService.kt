@@ -1,17 +1,14 @@
 package com.flyn.sarcopenia_project.viewer
 
 import android.app.Notification
-import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ServiceInfo
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.Log
 import android.widget.Toast
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.file.cache_file.CacheFile
@@ -35,7 +32,7 @@ class FileRecordService: Service() {
     private val dataReceiver = object: BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent) {
-            intent.getShortArrayExtra(BluetoothLeService.DATA)?.let { data ->
+            intent.getShortArrayExtra(ExtraManager.BLE_DATA)?.let { data ->
                 when(intent.action) {
                     ActionManager.EMG_LEFT_DATA_AVAILABLE -> {
                         val file = EmgCacheFile(TimeManager.time, data)

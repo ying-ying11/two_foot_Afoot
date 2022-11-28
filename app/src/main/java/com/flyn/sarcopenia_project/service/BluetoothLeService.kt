@@ -1,22 +1,33 @@
 package com.flyn.sarcopenia_project.service
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.bluetooth.*
 import android.content.Context
 import android.content.Intent
 import android.os.Binder
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
-import com.flyn.sarcopenia_project.utils.ActionManager
-import com.flyn.sarcopenia_project.utils.toShortArray
+import android.widget.Toast
+import com.flyn.sarcopenia_project.R
+import com.flyn.sarcopenia_project.file.cache_file.CacheFile
+import com.flyn.sarcopenia_project.file.cache_file.EmgCacheFile
+import com.flyn.sarcopenia_project.file.cache_file.ImuCacheFile
+import com.flyn.sarcopenia_project.utils.*
+import com.flyn.sarcopenia_project.viewer.FileRecordService
 import kotlinx.coroutines.*
 import java.util.concurrent.locks.ReentrantLock
 
 class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     companion object {
-        const val DATA = "BLE_DATA"
         private const val TAG = "Bluetooth Le Service"
+
+        private var isChannelInit = false
     }
 
     private val gattCallback = object: BluetoothGattCallback() {
@@ -34,7 +45,11 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
                 gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
             }
             else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                broadcastUpdate(ActionManager.GATT_DISCONNECTED)
+                Intent(ActionManager.GATT_DISCONNECTED).let {
+                    it.putExtra(ExtraManager.DEVICE_NAME, gatt.device.name)
+                    it.putExtra(ExtraManager.DEVICE_ADDRESS, gatt.device.address)
+                    sendBroadcast(it)
+                }
                 Log.i(TAG, "Disconnected from GATT server.")
             }
         }
@@ -46,7 +61,11 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
                     gatt.disconnect()
                     return
                 }
-                broadcastUpdate(ActionManager.GATT_CONNECTED)
+                Intent(ActionManager.GATT_CONNECTED).let {
+                    it.putExtra(ExtraManager.DEVICE_NAME, gatt.device.name)
+                    it.putExtra(ExtraManager.DEVICE_ADDRESS, gatt.device.address)
+                    sendBroadcast(it)
+                }
             }
             else Log.w(TAG, "onServicesDiscovered received: $status")
         }
@@ -58,32 +77,65 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+            // TODO change file name with device name
             when (characteristic.uuid) {
                 UUIDList.EMG_LEFT -> {
                     val data = EmgDecoder.decode(characteristic.value)
-                    broadcastUpdate(ActionManager.EMG_LEFT_DATA_AVAILABLE, data)
+                    val file = EmgCacheFile(TimeManager.time, data)
+                    writeFile(FileManager.EMG_LEFT_FILE_NAME, file)
+                    dataCount[0] += data.size
+                    Intent(ActionManager.EMG_LEFT_DATA_AVAILABLE).let {
+                        it.putExtra(ExtraManager.BLE_DATA, data)
+                        sendBroadcast(it)
+                    }
                 }
                 UUIDList.EMG_RIGHT -> {
                     val data = EmgDecoder.decode(characteristic.value)
-                    broadcastUpdate(ActionManager.EMG_RIGHT_DATA_AVAILABLE, data)
+                    val file = EmgCacheFile(TimeManager.time, data)
+                    writeFile(FileManager.EMG_RIGHT_FILE_NAME, file)
+                    dataCount[1] += data.size
+                    Intent(ActionManager.EMG_RIGHT_DATA_AVAILABLE).let {
+                        it.putExtra(ExtraManager.BLE_DATA, data)
+                        sendBroadcast(it)
+                    }
                 }
                 UUIDList.IMU_ACC -> {
                     val data = characteristic.value.toShortArray()
-                    broadcastUpdate(ActionManager.ACC_DATA_AVAILABLE, data)
+                    val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
+                    writeFile(FileManager.IMU_ACC_FILE_NAME, file)
+                    dataCount[2]++
+                    Intent(ActionManager.ACC_DATA_AVAILABLE).let {
+                        it.putExtra(ExtraManager.BLE_DATA, data)
+                        sendBroadcast(it)
+                    }
                 }
                 UUIDList.IMU_GYR -> {
                     val data = characteristic.value.toShortArray()
-                    broadcastUpdate(ActionManager.GYR_DATA_AVAILABLE, data)
+                    val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
+                    writeFile(FileManager.IMU_GYR_FILE_NAME, file)
+                    dataCount[3]++
+                    Intent(ActionManager.GYR_DATA_AVAILABLE).let {
+                        it.putExtra(ExtraManager.BLE_DATA, data)
+                        sendBroadcast(it)
+                    }
                 }
             }
         }
 
     }
 
+    private val binder = BleServiceBinder()
+    private val devices = mutableMapOf<String, DeviceInfo>()
+    private val dataCount = mutableListOf(0, 0, 0, 0)
     private val bluetoothAdapter: BluetoothAdapter by lazy {
         (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     }
-    private val devices = mutableMapOf<String, DeviceInfo>()
+    private val notification: Notification by lazy {
+        Notification.Builder(this, "Sarcopenia project")
+            .setContentTitle("Sarcopenia project")
+            .setContentText("Data receiving")
+            .build()
+    }
 
     private var lock = ReentrantLock()
     private var condition = lock.newCondition()
@@ -99,7 +151,20 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         return true
     }
 
+    fun disconnect(address: String) {
+        devices[address]?.gatt?.let {
+            enableNotification(it, false)
+            it.disconnect()
+        }
+        devices.remove(address)
+    }
+
     fun enableNotification(enable: Boolean) {
+        if (enable) {
+            TimeManager.resetTime()
+            startForeground(FileRecordService.NOTIFICATION_ID, notification)
+        }
+        else stopForeground(STOP_FOREGROUND_REMOVE)
         devices.forEach { (_, device) ->
             enableNotification(device.gatt, enable)
         }
@@ -128,12 +193,6 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         }
     }
 
-    private fun broadcastUpdate(action: String, data: ShortArray? = null) {
-        val intent = Intent(action)
-        if (data != null) intent.putExtra(DATA, data)
-        sendBroadcast(intent)
-    }
-
     private fun checkService(gatt: BluetoothGatt): Boolean {
         var result = gatt.services.map { it.uuid }
             .containsAll(listOf(UUIDList.ADC, UUIDList.IMU))
@@ -156,14 +215,40 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         devices.clear()
     }
 
-    override fun onBind(p0: Intent?): IBinder {
-        return BleServiceBinder()
+    private fun writeFile(fileName: String, file: CacheFile) {
+        GlobalScope.launch(Dispatchers.IO) {
+            FileManager.appendRecordData(fileName, file)
+        }
     }
 
-    override fun onUnbind(intent: Intent?): Boolean {
+    private fun saveFile() {
+        GlobalScope.launch(Dispatchers.IO) {
+            FileManager.writeRecordFile(dataCount[0], dataCount[1], dataCount[2], dataCount[3])
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(applicationContext, R.string.sava_completed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onCreate() {
+        if (!isChannelInit) {
+            val name: CharSequence = "Sarcopenia project"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("Sarcopenia project", name, importance)
+            channel.description = "Sarcopenia project description"
+
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
         disconnect()
-        Log.d(TAG, "BLE disconnect")
-        return super.onUnbind(intent)
+    }
+
+    override fun onBind(p0: Intent?): IBinder {
+        return binder
     }
 
     inner class BleServiceBinder: Binder() {

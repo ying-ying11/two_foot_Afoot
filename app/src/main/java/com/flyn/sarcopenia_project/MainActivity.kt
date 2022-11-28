@@ -81,14 +81,6 @@ class MainActivity: AppCompatActivity() {
         }
 
         FileManager.APP_DIR = filesDir
-
-        val name: CharSequence = "Sarcopenia project"
-        val description = "Sarcopenia project description"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val channel = NotificationChannel("Sarcopenia project", name, importance)
-        channel.description = description
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

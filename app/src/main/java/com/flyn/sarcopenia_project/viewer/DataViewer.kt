@@ -78,21 +78,21 @@ class DataViewer: AppCompatActivity() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 ActionManager.EMG_LEFT_DATA_AVAILABLE -> {
-                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let {
+                    intent.getShortArrayExtra(ExtraManager.BLE_DATA)?.let {
                         emgLeftData = it
                         emgState = emgState or 0x1
                         addEmgData()
                     }
                 }
                 ActionManager.EMG_RIGHT_DATA_AVAILABLE -> {
-                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let {
+                    intent.getShortArrayExtra(ExtraManager.BLE_DATA)?.let {
                         emgRightData = it
                         emgState = emgState or 0x2
                         addEmgData()
                     }
                 }
                 ActionManager.ACC_DATA_AVAILABLE -> {
-                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let { data ->
+                    intent.getShortArrayExtra(ExtraManager.BLE_DATA)?.let { data ->
                         val text =  data.map { accTransform(it) }.let {
                             getString(R.string.acc_describe, it[0], it[0], it[0])
                         }
@@ -101,7 +101,7 @@ class DataViewer: AppCompatActivity() {
                     }
                 }
                 ActionManager.GYR_DATA_AVAILABLE -> {
-                    intent.getShortArrayExtra(BluetoothLeService.DATA)?.let { data ->
+                    intent.getShortArrayExtra(ExtraManager.BLE_DATA)?.let { data ->
                         val text = data.map { gyrTransform(it) }.let {
                             getString(R.string.gyr_describe, it[0], it[1], it[2])
                         }
