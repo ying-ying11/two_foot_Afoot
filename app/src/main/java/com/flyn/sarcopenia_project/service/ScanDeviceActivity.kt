@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.flyn.sarcopenia_project.MainActivity
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.utils.ExtraManager
-import com.flyn.sarcopenia_project.viewer.DataViewer
 
 class ScanDeviceActivity: AppCompatActivity() {
 
@@ -100,7 +99,8 @@ class ScanDeviceActivity: AppCompatActivity() {
         deviceList.layoutManager = LinearLayoutManager(this)
         deviceList.adapter = ScannedListAdapter
         ScannedListAdapter.clickItemCallback { address ->
-            service?.connect(address)
+            val index = intent.getIntExtra(ExtraManager.DEVICE_INDEX, -1)
+            service?.connect(index, address)
             finish()
         }
 

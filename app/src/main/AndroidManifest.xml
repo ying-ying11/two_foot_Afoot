@@ -21,7 +21,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Sarcopenia_project" >
+        android:theme="@style/Theme.Sarcopenia_project"
+        android:screenOrientation="portrait" >
 
         <activity
             android:name=".MainActivity"
@@ -42,9 +43,6 @@
 
         <service
             android:name=".service.BluetoothLeService"
-            android:enabled="true" />
-        <service
-            android:name=".viewer.FileRecordService"
             android:enabled="true" />
 
     </application>

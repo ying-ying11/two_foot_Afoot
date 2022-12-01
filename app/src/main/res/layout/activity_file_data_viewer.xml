@@ -14,7 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            app:constraint_referenced_ids="file_viewer_emg_chart,file_viewer_acc_chart,file_viewer_gyr_chart"
+            app:constraint_referenced_ids="file_viewer_chart_left,file_viewer_acc_chart,file_viewer_gyr_chart"
             app:flow_verticalAlign="top"
             app:flow_verticalGap="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -28,7 +28,7 @@
             android:layout_height="300dp" />
 
         <com.github.mikephil.charting.charts.LineChart
-            android:id="@+id/file_viewer_emg_chart"
+            android:id="@+id/file_viewer_chart_left"
             android:layout_width="match_parent"
             android:layout_height="300dp" />
 

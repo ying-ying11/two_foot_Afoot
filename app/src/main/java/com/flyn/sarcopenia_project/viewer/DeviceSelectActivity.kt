@@ -15,8 +15,12 @@ import com.flyn.sarcopenia_project.utils.ExtraManager
 class DeviceSelectActivity: AppCompatActivity() {
 
     private val startButton: Button by lazy { findViewById(R.id.start_sampling_button) }
-    private val leftDevice: DeviceSelector by lazy { findViewById(R.id.left_foot) }
-    private val rightDevice: DeviceSelector by lazy { findViewById(R.id.right_foot) }
+    private val devices: Array<DeviceSelector> by lazy {
+        arrayOf(
+            findViewById(R.id.right_foot),
+            findViewById(R.id.left_foot)
+        )
+    }
     private val serviceConnection = object : ServiceConnection {
 
         override fun onServiceConnected(componentName: ComponentName?, binder: IBinder?) {
@@ -33,48 +37,50 @@ class DeviceSelectActivity: AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent) {
             val name = intent.getStringExtra(ExtraManager.DEVICE_NAME)
             val address = intent.getStringExtra(ExtraManager.DEVICE_ADDRESS)
+            val index = intent.getIntExtra(ExtraManager.DEVICE_INDEX, -1)
             when (intent.action) {
                 ActionManager.GATT_CONNECTED -> {
                     if (name == null || address == null) return
-                    if (isRightDevice) rightDevice.addDevice(name, address)
-                    else leftDevice.addDevice(name, address)
+                    devices[index].addDevice(name, address)
                 }
                 ActionManager.GATT_DISCONNECTED -> {
                     if (name == null || address == null) return
-                    if (address == leftDevice.address) leftDevice.removeDevice()
-                    if (address == rightDevice.address) rightDevice.removeDevice()
+                    devices[index].removeDevice()
                 }
             }
-            startButton.isEnabled = leftDevice.hasDevice && rightDevice.hasDevice
+            startButton.isEnabled = run {
+                var enable = true
+                devices.forEach { selector ->
+                    enable = selector.hasDevice && enable
+                }
+                enable
+            }
         }
 
     }
 
     private var service: BluetoothLeService? = null
-    private var isRightDevice = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device_select)
 
         startService(Intent(this, BluetoothLeService::class.java))
-        leftDevice.setOnClickListener {
-            if (!leftDevice.hasDevice) {
-                isRightDevice = false
-                startActivity(Intent(this, ScanDeviceActivity::class.java))
+        devices.forEachIndexed { index, device ->
+            device.setOnClickListener {
+                if (!device.hasDevice) {
+                    Intent(this, ScanDeviceActivity::class.java).let {
+                        it.putExtra(ExtraManager.DEVICE_INDEX, index)
+                        startActivity(it)
+                    }
+                }
+            }
+            device.setDisconnectCallback {
+                service?.disconnect(index)
             }
         }
-        leftDevice.setDisconnectCallback {
-            service?.disconnect(leftDevice.address)
-        }
-        rightDevice.setOnClickListener {
-            if (!rightDevice.hasDevice) {
-                isRightDevice = true
-                startActivity(Intent(this, ScanDeviceActivity::class.java))
-            }
-        }
-        rightDevice.setDisconnectCallback {
-            service?.disconnect(rightDevice.address)
+        startButton.setOnClickListener {
+            startActivity(Intent(this, DataViewer::class.java))
         }
     }
 
@@ -94,11 +100,6 @@ class DeviceSelectActivity: AppCompatActivity() {
         super.onPause()
         unbindService(serviceConnection)
         unregisterReceiver(receiver)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        stopService(Intent(this, BluetoothLeService::class.java))
     }
 
 }
