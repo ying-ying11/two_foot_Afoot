@@ -34,7 +34,7 @@ class DataViewer: AppCompatActivity() {
         }
     }
 
-    private val emg = DataPage(0f, 4096f, "Left", "Right") { "%.2f V".format(emgTransform(it)) }
+    private val emg = DataPage(0f, 4096f, "adc") { "%.2f V".format(emgTransform(it)) }
 
     private val acc = DataPage(-32768f, 32768f, "x", "y", "z") { "%.2f g".format(accTransform(it)) }
 
@@ -56,9 +56,16 @@ class DataViewer: AppCompatActivity() {
             val data = intent.getShortArrayExtra(ExtraManager.BLE_DATA)!!
             val index = intent.getIntExtra(ExtraManager.DEVICE_INDEX, -1)
             when (intent.action) {
-                ActionManager.EMG_DATA_AVAILABLE -> emg.addData(index, data[0])
-                ActionManager.ACC_DATA_AVAILABLE -> acc.addData(index, data[0], data[1], data[2])
-                ActionManager.GYR_DATA_AVAILABLE -> gyr.addData(index, data[0], data[1], data[2])
+                ActionManager.EMG_DATA_AVAILABLE -> {
+                    val value = mutableListOf<ShortArray>().apply {
+                        data.forEach {
+                            add(shortArrayOf(it))
+                        }
+                    }
+                    emg.addData(index, value)
+                }
+                ActionManager.ACC_DATA_AVAILABLE -> acc.addData(index, listOf(data))
+                ActionManager.GYR_DATA_AVAILABLE -> gyr.addData(index, listOf(data))
             }
         }
 

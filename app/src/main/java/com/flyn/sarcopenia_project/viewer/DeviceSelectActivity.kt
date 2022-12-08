@@ -82,13 +82,6 @@ class DeviceSelectActivity: AppCompatActivity() {
         startButton.setOnClickListener {
             startActivity(Intent(this, DataViewer::class.java))
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        Intent(this, BluetoothLeService::class.java).let {
-            bindService(it, serviceConnection, BIND_AUTO_CREATE)
-        }
         IntentFilter().run {
             addAction(ActionManager.GATT_CONNECTED)
             addAction(ActionManager.GATT_DISCONNECTED)
@@ -96,9 +89,20 @@ class DeviceSelectActivity: AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        Intent(this, BluetoothLeService::class.java).let {
+            bindService(it, serviceConnection, BIND_AUTO_CREATE)
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         unbindService(serviceConnection)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
         unregisterReceiver(receiver)
     }
 

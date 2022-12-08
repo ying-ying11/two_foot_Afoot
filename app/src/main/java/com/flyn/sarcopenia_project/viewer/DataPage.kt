@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.utils.ExtraManager
@@ -20,6 +19,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.ceil
 
 class DataPage(private val min: Float, private val max: Float,
                private vararg val names: String,
@@ -35,34 +35,33 @@ class DataPage(private val min: Float, private val max: Float,
     private var hasInit = false
     private var prevTime = 0L
 
-    // TODO change values to List<ShortArray>
-    fun addData(deviceIndex: Int, vararg values: Short) {
+    fun addData(deviceIndex: Int, values: List<ShortArray>) {
         if (context == null) return
         if (requireActivity() !is DataViewer) return
-        val time = TimeManager.time
-        if (time - prevTime > 100) {
-            prevTime = time
-            when (deviceIndex) {
-                ExtraManager.LEFT_DEVICE -> addDataToChart(leftChart, values.toTypedArray())
-                ExtraManager.RIGHT_DEVICE -> addDataToChart(rightChart, values.toTypedArray())
-            }
+        when (deviceIndex) {
+            ExtraManager.LEFT_DEVICE -> addDataToChart(leftChart, values)
+            ExtraManager.RIGHT_DEVICE -> addDataToChart(rightChart, values)
         }
 //        val samplingRate: Double = dataAmount / time.toDouble() * 1000
 //        samplingRateText.text = getString(R.string.sampling_rate, samplingRate)
     }
 
-    private fun addDataToChart(chart: LineChart, value: Array<Short>) {
-        var pos = 0f
-        value.forEachIndexed { index, data ->
-            chart.data.run {
-                pos = (TimeManager.time.toDouble() / 1000).toFloat()
-                addEntry(Entry(pos, data.toFloat()), index)
+    private fun addDataToChart(chart: LineChart, list: List<ShortArray>) {
+        var pos = TimeManager.time.toDouble().toFloat()
+        val interval = (TimeManager.time - prevTime).toFloat() / list.size
+        list.forEach { values ->
+            values.forEachIndexed { index, data ->
+                chart.data.run {
+                    addEntry(Entry(ceil(pos), data.toFloat()), index)
+                }
             }
+            pos += interval
         }
+        prevTime = TimeManager.time
         chart.data.notifyDataChanged()
         chart.notifyDataSetChanged()
-        chart.setVisibleXRangeMaximum(5f)
-        chart.moveViewToX(pos  - 4f)
+        chart.setVisibleXRangeMaximum(5000f)
+        chart.moveViewToX(pos  - 4000f)
     }
 
     private fun initChart(chart: LineChart) {
@@ -109,7 +108,7 @@ class DataPage(private val min: Float, private val max: Float,
                 color = colorSet.elementAtOrElse(ptr) { Color.BLACK }
                 circleColors = mutableListOf(color)
                 ptr += 1
-
+                setDrawCircles(false)
                 axisDependency = YAxis.AxisDependency.LEFT
                 mode = LineDataSet.Mode.CUBIC_BEZIER
                 setDrawValues(false)
