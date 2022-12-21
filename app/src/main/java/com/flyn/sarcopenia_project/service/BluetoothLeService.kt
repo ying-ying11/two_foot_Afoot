@@ -7,10 +7,7 @@ import android.app.Service
 import android.bluetooth.*
 import android.content.Context
 import android.content.Intent
-import android.os.Binder
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
+import android.os.*
 import android.util.Log
 import android.widget.Toast
 import com.flyn.sarcopenia_project.R
@@ -71,6 +68,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             // TODO change file name with device name
             val deviceIndex = addressMap[gatt.device.address]
+            devices[deviceIndex!!]?.characteristic?.set(characteristic, true)
             when (characteristic.uuid) {
                 UUIDList.EMG -> {
                     val data = EmgDecoder.decode(characteristic.value)
@@ -111,6 +109,15 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
             .setContentText("Data receiving")
             .build()
     }
+    private val handler = object: Handler(Looper.getMainLooper()) {
+
+        override fun handleMessage(msg: Message) {
+            when (msg.what) {
+                1 -> enableNotification()
+            }
+        }
+
+    }
 
     private var lock = ReentrantLock()
     private var condition = lock.newCondition()
@@ -132,7 +139,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     fun disconnect(deviceIndex: Int) {
         devices[deviceIndex]?.let {
-            enableNotification(it.gatt, false)
+            enableNotification(it, false)
             it.gatt.disconnect()
         }
         devices[deviceIndex] = null
@@ -141,9 +148,9 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
     fun disconnectAll() {
         devices.forEach { device ->
             if (device == null) return@forEach
-            device.gatt.let {
+            device.let {
                 enableNotification(it, false)
-                it.disconnect()
+                it.gatt.disconnect()
             }
         }
 
@@ -153,11 +160,15 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         if (enable) {
             TimeManager.resetTime()
             startForeground((System.nanoTime() % 10000).toInt(), notification)
+            handler.sendEmptyMessageDelayed(1, 1000)
         }
-        else stopForeground(STOP_FOREGROUND_REMOVE)
+        else {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            handler.removeCallbacksAndMessages(null)
+        }
         devices.forEach { device ->
             if (device == null) return@forEach
-            enableNotification(device.gatt, enable)
+            enableNotification(device, enable)
         }
     }
 
@@ -187,35 +198,55 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         }
     }
 
-    private fun enableNotification(gatt: BluetoothGatt, enable: Boolean) {
+    private fun enableNotification(device: DeviceInfo, enable: Boolean) {
         Log.i(TAG, "Notification is $enable")
         GlobalScope.launch(Dispatchers.Default) {
-            val characteristicSet = mutableSetOf(
-                gatt.getService(UUIDList.ADC).getCharacteristic(UUIDList.EMG),
-                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_ACC),
-                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_GYR),
-            )
-            characteristicSet.forEach {  characteristic ->
+            device.characteristic.forEach { (characteristic, _) ->
                 lock.lock()
                 characteristic.getDescriptor(UUIDList.CCC).run {
                     value = if (enable) BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                     else BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
-                    gatt.writeDescriptor(this)
+                    device.gatt.writeDescriptor(this)
                 }
-                gatt.setCharacteristicNotification(characteristic, enable)
+                device.gatt.setCharacteristicNotification(characteristic, enable)
                 condition.await()
                 lock.unlock()
             }
         }
     }
 
+    private fun enableNotification() {
+        GlobalScope.launch(Dispatchers.Default) {
+            devices.forEach { device ->
+                if (device == null) return@forEach
+                device.characteristic.filter { (_, isEnable) ->
+                    !isEnable
+                }.forEach { (characteristic, _) ->
+                    lock.lock()
+                    characteristic.getDescriptor(UUIDList.CCC).run {
+                        value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                        device.gatt.writeDescriptor(this)
+                    }
+                    device.gatt.setCharacteristicNotification(characteristic, true)
+                    condition.await()
+                    lock.unlock()
+                    device.characteristic[characteristic] = false
+                }
+            }
+        }
+        handler.sendEmptyMessageDelayed(1, 1000)
+    }
+
     private fun checkService(gatt: BluetoothGatt): Boolean {
+        // check service
         var result = gatt.services.map { it.uuid }
             .containsAll(listOf(UUIDList.ADC, UUIDList.IMU))
         if (!result) return false
+        // check emg characteristic
         result = gatt.getService(UUIDList.ADC).characteristics.map { it.uuid }
             .containsAll(listOf(UUIDList.EMG))
         if (!result) return false
+        // check acc & gyr characteristic
         result = gatt.getService(UUIDList.IMU).characteristics.map { it.uuid }
             .containsAll(listOf(UUIDList.IMU_ACC, UUIDList.IMU_GYR))
         return result
@@ -258,7 +289,16 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
     }
 
     private class DeviceInfo(val address: String, val gatt: BluetoothGatt) {
+        val characteristic: MutableMap<BluetoothGattCharacteristic, Boolean> by lazy {
+            mutableMapOf(
+                gatt.getService(UUIDList.ADC).getCharacteristic(UUIDList.EMG) to false,
+                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_ACC) to false,
+                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_GYR) to false
+            )
+        }
+
         var isConnected = false
+
     }
 
 }
