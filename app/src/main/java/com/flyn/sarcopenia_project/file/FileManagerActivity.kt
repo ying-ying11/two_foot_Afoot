@@ -60,15 +60,14 @@ class FileManagerActivity: AppCompatActivity() {
             registerReceiver(fileItemReceiver, this)
         }
 
-        // TODO move out to function
         cancelButton.setOnClickListener {
             fileItemAdapter.isItemSelected(false)
         }
-        // TODO move out to function
+
         deleteButton.setOnClickListener {
             fileItemAdapter.deleteFile()
         }
-        // TODO move out to function
+
         cloudSaveButton.setOnClickListener {
             fileItemAdapter.cloudSave()
         }

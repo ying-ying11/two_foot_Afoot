@@ -92,7 +92,7 @@ class DataViewer: AppCompatActivity() {
             setMessage(R.string.check_saving)
             setPositiveButton(R.string.save) { _, _ ->
                 // TODO
-//                service.saveFile()
+                service.saveFile()
                 finishSampling()
             }
             setNegativeButton(R.string.cancel) { _, _ ->

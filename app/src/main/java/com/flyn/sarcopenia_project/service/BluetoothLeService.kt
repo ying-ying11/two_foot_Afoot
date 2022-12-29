@@ -79,21 +79,21 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
                 UUIDList.EMG -> {
                     val data = EmgDecoder.decode(characteristic.value)
                     val file = EmgCacheFile(TimeManager.time, data)
-                    writeFile(FileManager.EMG_LEFT_FILE_NAME, file)
+                    writeFile(deviceIndex, FileManager.EMG_LEFT_FILE_NAME, file)
                     dataCount[0] += data.size
                     sendDataBroadcast(deviceIndex, ActionManager.EMG_DATA_AVAILABLE, data)
                 }
                 UUIDList.IMU_ACC -> {
                     val data = characteristic.value.toShortArray()
                     val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
-                    writeFile(FileManager.IMU_ACC_FILE_NAME, file)
+                    writeFile(deviceIndex, FileManager.IMU_ACC_FILE_NAME, file)
                     dataCount[2]++
                     sendDataBroadcast(deviceIndex, ActionManager.ACC_DATA_AVAILABLE, data)
                 }
                 UUIDList.IMU_GYR -> {
                     val data = characteristic.value.toShortArray()
                     val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
-                    writeFile(FileManager.IMU_GYR_FILE_NAME, file)
+                    writeFile(deviceIndex, FileManager.IMU_GYR_FILE_NAME, file)
                     dataCount[3]++
                     sendDataBroadcast(deviceIndex, ActionManager.GYR_DATA_AVAILABLE, data)
                 }
@@ -176,7 +176,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     fun saveFile() {
         GlobalScope.launch(Dispatchers.IO) {
-            FileManager.writeRecordFile(dataCount[0], dataCount[1], dataCount[2], dataCount[3])
+            FileManager.writeRecordFile(2)
             Handler(Looper.getMainLooper()).post {
                 Toast.makeText(applicationContext, R.string.sava_completed, Toast.LENGTH_SHORT).show()
             }
@@ -261,9 +261,9 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         return result
     }
 
-    private fun writeFile(fileName: String, file: CacheFile) {
+    private fun writeFile(index: Int, fileName: String, file: CacheFile) {
         GlobalScope.launch(Dispatchers.IO) {
-            FileManager.appendRecordData(fileName, file)
+            FileManager.appendRecordData(index, fileName, file)
         }
     }
 
