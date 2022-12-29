@@ -38,13 +38,12 @@ class DeviceSelectActivity: AppCompatActivity() {
             val name = intent.getStringExtra(ExtraManager.DEVICE_NAME)
             val address = intent.getStringExtra(ExtraManager.DEVICE_ADDRESS)
             val index = intent.getIntExtra(ExtraManager.DEVICE_INDEX, -1)
+            if (name == null || address == null || index < 0) return
             when (intent.action) {
                 ActionManager.GATT_CONNECTED -> {
-                    if (name == null || address == null) return
                     devices[index].addDevice(name, address)
                 }
                 ActionManager.GATT_DISCONNECTED -> {
-                    if (name == null || address == null) return
                     devices[index].removeDevice()
                 }
             }
@@ -81,6 +80,7 @@ class DeviceSelectActivity: AppCompatActivity() {
         }
         startButton.setOnClickListener {
             startActivity(Intent(this, DataViewer::class.java))
+            finish()
         }
         IntentFilter().run {
             addAction(ActionManager.GATT_CONNECTED)

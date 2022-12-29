@@ -16,6 +16,7 @@ import com.flyn.sarcopenia_project.file.cache_file.EmgCacheFile
 import com.flyn.sarcopenia_project.file.cache_file.ImuCacheFile
 import com.flyn.sarcopenia_project.utils.*
 import kotlinx.coroutines.*
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 
 class BluetoothLeService: Service(), CoroutineScope by MainScope() {
@@ -41,9 +42,9 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
             }
             else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 sendStateBroadcast(ActionManager.GATT_DISCONNECTED, gatt.device)
-                addressMap.remove(gatt.device.address)
                 Log.i(TAG, "Disconnected from GATT server.")
                 // TODO reconnect
+                devices[getIndex(gatt.device.address)] = null
             }
         }
 
@@ -51,6 +52,11 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (!checkService(gatt)) {
                     Log.e(TAG, "service not found!")
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(
+                            this@BluetoothLeService, "This device not match", Toast.LENGTH_SHORT
+                        ).show()
+                    }
                     gatt.disconnect()
                     return
                 }
@@ -67,8 +73,8 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
             // TODO change file name with device name
-            val deviceIndex = addressMap[gatt.device.address]
-            devices[deviceIndex!!]?.characteristic?.set(characteristic, true)
+            val deviceIndex = getIndex(gatt.device.address)
+            devices[deviceIndex]?.characteristic?.set(characteristic, true)
             when (characteristic.uuid) {
                 UUIDList.EMG -> {
                     val data = EmgDecoder.decode(characteristic.value)
@@ -97,7 +103,6 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
     }
 
     private val binder = BleServiceBinder()
-    private val addressMap = mutableMapOf<String, Int>()
     private val devices = arrayOfNulls<DeviceInfo>(2)
     private val dataCount = mutableListOf(0, 0, 0, 0)
     private val bluetoothAdapter: BluetoothAdapter by lazy {
@@ -127,12 +132,14 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
             return if (devices[deviceIndex]!!.address == address) {
                 Log.d(TAG, "BLE reconnect")
                 devices[deviceIndex]!!.gatt.connect()
-            } else false
+            } else {
+                Log.e(TAG, "device not match!")
+                false
+            }
         }
         val device = bluetoothAdapter.getRemoteDevice(address)?: return false
         devices[deviceIndex] = DeviceInfo(address,
             device.connectGatt(this, false, gattCallback))
-        addressMap[address] = deviceIndex
         Log.d(TAG, "BLE connect")
         return true
     }
@@ -140,20 +147,15 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
     fun disconnect(deviceIndex: Int) {
         devices[deviceIndex]?.let {
             enableNotification(it, false)
+            it.gatt.close()
             it.gatt.disconnect()
         }
-        devices[deviceIndex] = null
     }
 
     fun disconnectAll() {
-        devices.forEach { device ->
-            if (device == null) return@forEach
-            device.let {
-                enableNotification(it, false)
-                it.gatt.disconnect()
-            }
+        for (i in devices.indices) {
+            disconnect(i)
         }
-
     }
 
     fun enableNotification(enable: Boolean) {
@@ -181,11 +183,18 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         }
     }
 
+    private fun getIndex(address: String): Int {
+        for (i in devices.indices) {
+            if (address == devices[i]?.address) return i
+        }
+        return -1
+    }
+
     private fun sendStateBroadcast(action: String, device: BluetoothDevice) {
         Intent(action).let {
             it.putExtra(ExtraManager.DEVICE_NAME, device.name)
             it.putExtra(ExtraManager.DEVICE_ADDRESS, device.address)
-            it.putExtra(ExtraManager.DEVICE_INDEX, addressMap[device.address])
+            it.putExtra(ExtraManager.DEVICE_INDEX, getIndex(device.address))
             sendBroadcast(it)
         }
     }
