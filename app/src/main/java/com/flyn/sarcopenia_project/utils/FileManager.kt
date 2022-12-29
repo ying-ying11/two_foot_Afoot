@@ -10,8 +10,7 @@ import java.util.concurrent.locks.ReentrantLock
 
 object FileManager {
 
-    const val EMG_LEFT_FILE_NAME = "emg_left"
-    const val EMG_RIGHT_FILE_NAME = "emg_right"
+    const val EMG_FILE_NAME = "emg_left"
     const val IMU_ACC_FILE_NAME = "imu_acc"
     const val IMU_GYR_FILE_NAME = "imu_gyr"
 
@@ -48,32 +47,13 @@ object FileManager {
         TEMP_DIR.deleteRecursively()
         lock.unlock()
     }
-//
-//    fun writeRecordFile(leftCount: Int, rightCount: Int, accCount: Int, gyrCount: Int) {
-//        lock.lock()
-//        val filePath = dataFormat.format(Date())
-//        FileOutputStream(File(RECORDING_DIR, filePath)).use { out ->
-//            out.write("emg left, $leftCount\n".toByteArray())
-//            copyCacheFile(out, EMG_LEFT_FILE_NAME)
-//
-//            out.write("emg right, $rightCount\n".toByteArray())
-//            copyCacheFile(out, EMG_RIGHT_FILE_NAME)
-//
-//            out.write("imu acc, $accCount\n".toByteArray())
-//            copyCacheFile(out, IMU_ACC_FILE_NAME)
-//
-//            out.write("imu gyr, $gyrCount\n".toByteArray())
-//            copyCacheFile(out, IMU_GYR_FILE_NAME)
-//        }
-//        lock.unlock()
-//    }
 
     fun writeRecordFile(fileCount: Int) {
         lock.lock()
         val filePath = dataFormat.format(Date())
         for (i in 0 until fileCount) {
             FileOutputStream(File(RECORDING_DIR, "${filePath}_$i.csv")).use { out ->
-                val emgFile = RandomAccessFile(File(TEMP_DIR, "${EMG_LEFT_FILE_NAME}_$i.csv"), "r")
+                val emgFile = RandomAccessFile(File(TEMP_DIR, "${EMG_FILE_NAME}_$i.csv"), "r")
                 val accFile = RandomAccessFile(File(TEMP_DIR, "${IMU_ACC_FILE_NAME}_$i.csv"), "r")
                 val gyrFile = RandomAccessFile(File(TEMP_DIR, "${IMU_GYR_FILE_NAME}_$i.csv"), "r")
                 out.write(HEADER.toByteArray())
@@ -98,19 +78,5 @@ object FileManager {
             s ?: fill[i]
         }.joinToString(separator = ", ", postfix = "\n")
     }
-//
-//    private fun copyCacheFile(out: FileOutputStream, fileName: String) {
-//        File(TEMP_DIR, fileName).let { file ->
-//            if (!file.exists()) return
-//            FileInputStream(file).use { input ->
-//                val buffer = ByteArray(1024)
-//                var len: Int
-//                while (input.read(buffer).also { len = it } != -1) {
-//                    Log.d(TAG, "File write - $fileName, length: $len")
-//                    out.write(buffer, 0 , len)
-//                }
-//            }
-//        }
-//    }
 
 }

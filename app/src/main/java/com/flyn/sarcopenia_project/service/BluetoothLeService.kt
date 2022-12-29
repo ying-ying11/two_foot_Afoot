@@ -79,7 +79,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
                 UUIDList.EMG -> {
                     val data = EmgDecoder.decode(characteristic.value)
                     val file = EmgCacheFile(TimeManager.time, data)
-                    writeFile(deviceIndex, FileManager.EMG_LEFT_FILE_NAME, file)
+                    writeFile(deviceIndex, FileManager.EMG_FILE_NAME, file)
                     dataCount[0] += data.size
                     sendDataBroadcast(deviceIndex, ActionManager.EMG_DATA_AVAILABLE, data)
                 }
