@@ -176,7 +176,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     fun saveFile() {
         GlobalScope.launch(Dispatchers.IO) {
-            FileManager.writeRecordFile(2)
+            FileManager.writeRecordFile(2, listOf("right", "left"))
             Handler(Looper.getMainLooper()).post {
                 Toast.makeText(applicationContext, R.string.sava_completed, Toast.LENGTH_SHORT).show()
             }

@@ -48,11 +48,12 @@ object FileManager {
         lock.unlock()
     }
 
-    fun writeRecordFile(fileCount: Int) {
+    fun writeRecordFile(fileCount: Int, nickname: List<String> = listOf()) {
         lock.lock()
         val filePath = dataFormat.format(Date())
         for (i in 0 until fileCount) {
-            FileOutputStream(File(RECORDING_DIR, "${filePath}_$i.csv")).use { out ->
+            val name = if (i < nickname.size) nickname[i] else i.toString()
+            FileOutputStream(File(RECORDING_DIR, "${filePath}_${name}_raw.csv")).use { out ->
                 val emgFile = RandomAccessFile(File(TEMP_DIR, "${EMG_FILE_NAME}_$i.csv"), "r")
                 val accFile = RandomAccessFile(File(TEMP_DIR, "${IMU_ACC_FILE_NAME}_$i.csv"), "r")
                 val gyrFile = RandomAccessFile(File(TEMP_DIR, "${IMU_GYR_FILE_NAME}_$i.csv"), "r")
