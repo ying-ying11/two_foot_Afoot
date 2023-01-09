@@ -27,4 +27,13 @@
     <string name="cancel">取消</string>
     <string name="sava_completed">檔案儲存完畢</string>
 
+    <!--    device select activity    -->
+    <string name="device_left">左腳</string>
+    <string name="device_right">右腳</string>
+    <string name="start_sampling">開始採樣</string>
+
+    <!--    device select component    -->
+    <string name="add_device_hint">點擊增加裝置</string>
+    <string name="disconnect_device">中斷連線</string>
+
 </resources>

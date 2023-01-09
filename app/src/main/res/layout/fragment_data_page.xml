@@ -9,37 +9,23 @@
         android:layout_height="match_parent">
 
         <com.github.mikephil.charting.charts.LineChart
-            android:id="@+id/file_viewer_emg_chart"
+            android:id="@+id/file_viewer_chart_left"
             android:layout_width="match_parent"
             android:layout_height="300dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
+            android:layout_margin="8dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/sampling_rate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:textSize="20sp"
-            app:layout_constraintStart_toStartOf="parent"
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/file_viewer_chart_right"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_margin="8dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/file_viewer_emg_chart"
-            app:layout_constraintBottom_toTopOf="@id/data_descriptor" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/file_viewer_chart_left" />
 
-        <TextView
-            android:id="@+id/data_descriptor"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginStart="16dp"
-            android:textSize="20sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/sampling_rate"
-            app:layout_constraintBottom_toBottomOf="parent"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

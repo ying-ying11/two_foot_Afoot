@@ -21,7 +21,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Sarcopenia_project" >
+        android:theme="@style/Theme.Sarcopenia_project"
+        android:screenOrientation="portrait" >
 
         <activity
             android:name=".MainActivity"
@@ -38,12 +39,10 @@
         <activity android:name=".service.ScanDeviceActivity" android:noHistory="true" />
         <activity android:name=".file.FileManagerActivity" />
         <activity android:name=".file.FileDataViewer" />
+        <activity android:name=".viewer.DeviceSelectActivity" />
 
         <service
             android:name=".service.BluetoothLeService"
-            android:enabled="true" />
-        <service
-            android:name=".viewer.FileRecordService"
             android:enabled="true" />
 
     </application>

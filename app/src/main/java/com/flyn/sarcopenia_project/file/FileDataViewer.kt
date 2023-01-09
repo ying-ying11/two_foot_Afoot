@@ -32,7 +32,7 @@ class FileDataViewer: AppCompatActivity() {
         private val imuPattern = Regex("""(\d+),([-]?\d+),([-]?\d+),([-]?\d+)""")
     }
 
-    private val emgChart: LineChart by lazy { findViewById(R.id.file_viewer_emg_chart) }
+    private val emgChart: LineChart by lazy { findViewById(R.id.file_viewer_chart_left) }
     private val accChart: LineChart by lazy { findViewById(R.id.file_viewer_acc_chart) }
     private val gyrChart: LineChart by lazy { findViewById(R.id.file_viewer_gyr_chart) }
 
