@@ -11,9 +11,7 @@
     <string name="stop_scan_button">停止掃描</string>
     <string name="rescan_button">重新掃描</string>
 
-    <string name="emg_tab">EMG</string>
-    <string name="acc_tab">ACC</string>
-    <string name="gyr_tab">GYR</string>
+    <string name="foot_pressure_tab">Foot Pressure</string>
 
     <string name="emg_describe">left: %.2f V\nright: %.2f V</string>
     <string name="acc_describe">x: %.2f g\ny: %.2f g\nz: %.2f g</string>

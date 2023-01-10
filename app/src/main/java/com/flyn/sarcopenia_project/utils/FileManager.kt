@@ -10,12 +10,10 @@ import java.util.concurrent.locks.ReentrantLock
 
 object FileManager {
 
-    const val EMG_FILE_NAME = "emg_left"
-    const val IMU_ACC_FILE_NAME = "imu_acc"
-    const val IMU_GYR_FILE_NAME = "imu_gyr"
+    const val ADC_FILE_NAME = "adc"
 
     private const val TAG = "FILE_MANAGER"
-    private const val HEADER = "timestamp, emg, timestamp, x, y, z, timestamp, x, y, z\n"
+    private const val HEADER = "timestamp, ha, lt, m1, m5, arch, hm\n"
 
     private val dataFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale("zh", "tw"))
     private val lock = ReentrantLock()
@@ -54,18 +52,16 @@ object FileManager {
         for (i in 0 until fileCount) {
             val name = if (i < nickname.size) nickname[i] else i.toString()
             FileOutputStream(File(RECORDING_DIR, "${filePath}_${name}_raw.csv")).use { out ->
-                val emgFile = RandomAccessFile(File(TEMP_DIR, "${EMG_FILE_NAME}_$i.csv"), "r")
-                val accFile = RandomAccessFile(File(TEMP_DIR, "${IMU_ACC_FILE_NAME}_$i.csv"), "r")
-                val gyrFile = RandomAccessFile(File(TEMP_DIR, "${IMU_GYR_FILE_NAME}_$i.csv"), "r")
+                val adcFile = RandomAccessFile(File(TEMP_DIR, "${ADC_FILE_NAME}_$i.csv"), "r")
                 out.write(HEADER.toByteArray())
-                val fill = arrayOf(", ", ", , , ", ", , , ")
+                val fill = arrayOf(", , , , , ,")
                 var text = combineText(fill,
-                    arrayOf(emgFile.readLine(), accFile.readLine(), gyrFile.readLine())
+                    arrayOf(adcFile.readLine())
                 )
                 while (text != null) {
                     out.write(text.toByteArray())
                     text = combineText(fill,
-                        arrayOf(emgFile.readLine(), accFile.readLine(), gyrFile.readLine())
+                        arrayOf(adcFile.readLine())
                     )
                 }
             }

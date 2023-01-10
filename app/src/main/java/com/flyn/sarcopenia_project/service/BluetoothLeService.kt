@@ -12,8 +12,7 @@ import android.util.Log
 import android.widget.Toast
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.file.cache_file.CacheFile
-import com.flyn.sarcopenia_project.file.cache_file.EmgCacheFile
-import com.flyn.sarcopenia_project.file.cache_file.ImuCacheFile
+import com.flyn.sarcopenia_project.file.cache_file.FootPressureCacheFile
 import com.flyn.sarcopenia_project.utils.*
 import kotlinx.coroutines.*
 import java.util.*
@@ -76,22 +75,12 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
             devices[deviceIndex]?.characteristic?.set(characteristic, true)
             when (characteristic.uuid) {
                 UUIDList.EMG -> {
-                    val data = EmgDecoder.decode(characteristic.value)
-                    val file = EmgCacheFile(TimeManager.time, data)
-                    writeFile(deviceIndex, FileManager.EMG_FILE_NAME, file)
-                    sendDataBroadcast(deviceIndex, ActionManager.EMG_DATA_AVAILABLE, data)
-                }
-                UUIDList.IMU_ACC -> {
+//                    val data = EmgDecoder.decode(characteristic.value)
+                    // TODO decode
                     val data = characteristic.value.toShortArray()
-                    val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
-                    writeFile(deviceIndex, FileManager.IMU_ACC_FILE_NAME, file)
-                    sendDataBroadcast(deviceIndex, ActionManager.ACC_DATA_AVAILABLE, data)
-                }
-                UUIDList.IMU_GYR -> {
-                    val data = characteristic.value.toShortArray()
-                    val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
-                    writeFile(deviceIndex, FileManager.IMU_GYR_FILE_NAME, file)
-                    sendDataBroadcast(deviceIndex, ActionManager.GYR_DATA_AVAILABLE, data)
+                    val file = FootPressureCacheFile(TimeManager.time, data)
+                    writeFile(deviceIndex, FileManager.ADC_FILE_NAME, file)
+                    sendDataBroadcast(deviceIndex, ActionManager.ADC_DATA_AVAILABLE, data)
                 }
             }
         }
@@ -244,15 +233,11 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
     private fun checkService(gatt: BluetoothGatt): Boolean {
         // check service
         var result = gatt.services.map { it.uuid }
-            .containsAll(listOf(UUIDList.ADC, UUIDList.IMU))
+            .containsAll(listOf(UUIDList.ADC))
         if (!result) return false
         // check emg characteristic
         result = gatt.getService(UUIDList.ADC).characteristics.map { it.uuid }
             .containsAll(listOf(UUIDList.EMG))
-        if (!result) return false
-        // check acc & gyr characteristic
-        result = gatt.getService(UUIDList.IMU).characteristics.map { it.uuid }
-            .containsAll(listOf(UUIDList.IMU_ACC, UUIDList.IMU_GYR))
         return result
     }
 
@@ -295,9 +280,7 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
     private class DeviceInfo(val address: String, val gatt: BluetoothGatt) {
         val characteristic: MutableMap<BluetoothGattCharacteristic, Boolean> by lazy {
             mutableMapOf(
-                gatt.getService(UUIDList.ADC).getCharacteristic(UUIDList.EMG) to false,
-                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_ACC) to false,
-                gatt.getService(UUIDList.IMU).getCharacteristic(UUIDList.IMU_GYR) to false
+                gatt.getService(UUIDList.ADC).getCharacteristic(UUIDList.EMG) to false
             )
         }
 

@@ -14,35 +14,29 @@ import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.service.BluetoothLeService
 import com.flyn.sarcopenia_project.utils.ActionManager
 import com.flyn.sarcopenia_project.utils.ExtraManager
+import com.flyn.sarcopenia_project.utils.calibrate
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.*
 import java.util.*
-import kotlin.math.min
 
 
 class DataViewer: AppCompatActivity() {
 
     companion object {
         private const val TAG = "Data Viewer"
-        private val tagName = listOf("EMG", "ACC", "GYR")
+        private val tagName = listOf("Foot Pressure")
         private val dataFilter = IntentFilter().apply {
-            addAction(ActionManager.EMG_DATA_AVAILABLE)
-            addAction(ActionManager.ACC_DATA_AVAILABLE)
-            addAction(ActionManager.GYR_DATA_AVAILABLE)
+            addAction(ActionManager.ADC_DATA_AVAILABLE)
         }
     }
 
-    private val emg = DataPage(0f, 4096f, "adc") { "%.2f V".format(emgTransform(it)) }
-
-    private val acc = DataPage(-32768f, 32768f, "x", "y", "z") { "%.2f g".format(accTransform(it)) }
-
-    private val gyr = DataPage(-32768f, 32768f, "x", "y", "z") { "%.2f rad/s".format(gyrTransform(it)) }
+    private val adc = DataPage(0f, 2500f, "HA","LT","M1","M5","Arch","HM") { "%.2f g".format(it) }
 
     private val pageAdapter = object: FragmentStateAdapter(supportFragmentManager, lifecycle) {
 
-        val fragments = arrayOf(emg, acc, gyr)
+        val fragments = arrayOf(adc)
 
         override fun getItemCount(): Int = fragments.size
 
@@ -56,16 +50,9 @@ class DataViewer: AppCompatActivity() {
             val data = intent.getShortArrayExtra(ExtraManager.BLE_DATA)!!
             val index = intent.getIntExtra(ExtraManager.DEVICE_INDEX, -1)
             when (intent.action) {
-                ActionManager.EMG_DATA_AVAILABLE -> {
-                    val value = mutableListOf<ShortArray>().apply {
-                        data.forEach {
-                            add(shortArrayOf(it))
-                        }
-                    }
-                    emg.addData(index, value)
+                ActionManager.ADC_DATA_AVAILABLE -> {
+                    adc.addData(index, listOf(calibrate(data)))
                 }
-                ActionManager.ACC_DATA_AVAILABLE -> acc.addData(index, listOf(data))
-                ActionManager.GYR_DATA_AVAILABLE -> gyr.addData(index, listOf(data))
             }
         }
 
@@ -91,7 +78,6 @@ class DataViewer: AppCompatActivity() {
         MaterialAlertDialogBuilder(this).apply {
             setMessage(R.string.check_saving)
             setPositiveButton(R.string.save) { _, _ ->
-                // TODO
                 service.saveFile()
                 finishSampling()
             }
@@ -102,15 +88,6 @@ class DataViewer: AppCompatActivity() {
     }
 
     private lateinit var service: BluetoothLeService
-
-    private fun emgTransform(value: Short): Float = value.toFloat() / 4095f * 3.6f
-    private fun emgTransform(value: Float): Float = value / 4095f * 3.6f
-
-    private fun accTransform(value: Short): Float = value.toFloat() / 32767f * 2f
-    private fun accTransform(value: Float): Float = value / 32767f * 2f
-
-    private fun gyrTransform(value: Short): Float = value.toFloat() / 32767f * 250f
-    private fun gyrTransform(value: Float): Float = value / 32767f * 250f
 
     private fun finishSampling() {
         service.disconnectAll()

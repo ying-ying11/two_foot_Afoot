@@ -27,7 +27,7 @@ class DataPage(private val min: Float, private val max: Float,
 
     companion object {
         private val dataFormat = SimpleDateFormat("mm:ss.SSS", Locale("zh", "tw"))
-        private val colorSet = setOf(Color.RED, Color.GREEN, Color.BLUE)
+        private val colorSet = setOf(Color.RED, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA)
     }
 
     private lateinit var leftChart: LineChart
@@ -35,7 +35,7 @@ class DataPage(private val min: Float, private val max: Float,
     private var hasInit = false
     private var prevTime = 0L
 
-    fun addData(deviceIndex: Int, values: List<ShortArray>) {
+    fun addData(deviceIndex: Int, values: List<FloatArray>) {
         if (context == null) return
         if (requireActivity() !is DataViewer) return
         when (deviceIndex) {
@@ -46,13 +46,13 @@ class DataPage(private val min: Float, private val max: Float,
 //        samplingRateText.text = getString(R.string.sampling_rate, samplingRate)
     }
 
-    private fun addDataToChart(chart: LineChart, list: List<ShortArray>) {
+    private fun addDataToChart(chart: LineChart, list: List<FloatArray>) {
         var pos = TimeManager.time.toDouble().toFloat()
         val interval = (TimeManager.time - prevTime).toFloat() / list.size
         list.forEach { values ->
             values.forEachIndexed { index, data ->
                 chart.data.run {
-                    addEntry(Entry(ceil(pos), data.toFloat()), index)
+                    addEntry(Entry(ceil(pos), data), index)
                 }
             }
             pos += interval
