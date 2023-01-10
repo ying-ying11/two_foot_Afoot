@@ -72,7 +72,6 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
         }
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            // TODO change file name with device name
             val deviceIndex = getIndex(gatt.device.address)
             devices[deviceIndex]?.characteristic?.set(characteristic, true)
             when (characteristic.uuid) {
@@ -80,21 +79,18 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
                     val data = EmgDecoder.decode(characteristic.value)
                     val file = EmgCacheFile(TimeManager.time, data)
                     writeFile(deviceIndex, FileManager.EMG_FILE_NAME, file)
-                    dataCount[0] += data.size
                     sendDataBroadcast(deviceIndex, ActionManager.EMG_DATA_AVAILABLE, data)
                 }
                 UUIDList.IMU_ACC -> {
                     val data = characteristic.value.toShortArray()
                     val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
                     writeFile(deviceIndex, FileManager.IMU_ACC_FILE_NAME, file)
-                    dataCount[2]++
                     sendDataBroadcast(deviceIndex, ActionManager.ACC_DATA_AVAILABLE, data)
                 }
                 UUIDList.IMU_GYR -> {
                     val data = characteristic.value.toShortArray()
                     val file = ImuCacheFile(TimeManager.time, data[0], data[1], data[2])
                     writeFile(deviceIndex, FileManager.IMU_GYR_FILE_NAME, file)
-                    dataCount[3]++
                     sendDataBroadcast(deviceIndex, ActionManager.GYR_DATA_AVAILABLE, data)
                 }
             }
@@ -104,7 +100,6 @@ class BluetoothLeService: Service(), CoroutineScope by MainScope() {
 
     private val binder = BleServiceBinder()
     private val devices = arrayOfNulls<DeviceInfo>(2)
-    private val dataCount = mutableListOf(0, 0, 0, 0)
     private val bluetoothAdapter: BluetoothAdapter by lazy {
         (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
     }
