@@ -12,6 +12,8 @@
     <string name="rescan_button">重新掃描</string>
 
     <string name="foot_pressure_tab">Foot Pressure</string>
+    <string name="cop_tab">CoP</string>
+    <string name="gait_tab">Gait</string>
 
     <string name="emg_describe">left: %.2f V\nright: %.2f V</string>
     <string name="acc_describe">x: %.2f g\ny: %.2f g\nz: %.2f g</string>
@@ -33,5 +35,17 @@
     <!--    device select component    -->
     <string name="add_device_hint">點擊增加裝置</string>
     <string name="disconnect_device">中斷連線</string>
+
+    <!--    device value fragment    -->
+    <string name="cop">x:%.2f\ny:%.2f</string>
+    <string name="gait">步距:%.2f 公尺</string>
+    <string name="step_duration">踏步時間:%.2f 秒</string>
+    <string name="velocity">速度:%.2f 公尺/秒</string>
+
+    <string-array name="spinner_items">
+        <item>male</item>
+        <item>female</item>
+    </string-array>
+
 
 </resources>

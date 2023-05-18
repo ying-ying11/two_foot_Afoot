@@ -26,19 +26,19 @@ class MainActivity: AppCompatActivity() {
     @TargetApi(Build.VERSION_CODES.M)
     private val requestMultiplePermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            permissions -> permissions.forEach { (_, value) ->
-                if (!value) {
-                    Intent().run {
-                        action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
-                        data = Uri.fromParts("package", packageName, null)
-                        startActivity(this)
-                    }
+                permissions -> permissions.forEach { (_, value) ->
+            if (!value) {
+                Intent().run {
+                    action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    data = Uri.fromParts("package", packageName, null)
+                    startActivity(this)
                 }
             }
         }
+        }
 
-    private val dataViewerButton: Button by lazy { findViewById(R.id.main_data_viewer) }
-    private val fileManagerButton: Button by lazy { findViewById(R.id.main_file_manager) }
+    private val LoginButton: Button by lazy { findViewById(R.id.login_button) }
+
 
     private fun PackageManager.missingSystemFeature(name: String): Boolean = !hasSystemFeature(name)
 
@@ -72,23 +72,13 @@ class MainActivity: AppCompatActivity() {
         checkPermission()
 
         // TODO move out to function
-        dataViewerButton.setOnClickListener {
-            startActivity(Intent(this, DeviceSelectActivity::class.java))
+        LoginButton.setOnClickListener {
+            startActivity(Intent(this, connectBle::class.java))
         }
 
-        fileManagerButton.setOnClickListener {
-            startActivity(Intent(this, FileManagerActivity::class.java))
-        }
 
         FileManager.APP_DIR = filesDir
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-            finishAffinity()
-            return false
-        }
-        return super.onKeyDown(keyCode, event)
+        FileManager.CACHE_DIR = cacheDir
     }
 
 }

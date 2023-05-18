@@ -8,7 +8,7 @@ class FootPressureCacheFile(private val timeLabel: Long, private val footPressur
     override fun toCsv(): String {
         return StringBuilder().apply {
             this.append("$timeLabel")
-            calibrate(footPressureData).forEach { data ->
+            footPressureData.forEach { data ->
                 this.append(", $data")
             }
             this.append("\n")

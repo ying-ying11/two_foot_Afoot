@@ -13,12 +13,13 @@ object FileManager {
     const val ADC_FILE_NAME = "adc"
 
     private const val TAG = "FILE_MANAGER"
-    private const val HEADER = "timestamp, ha, lt, m1, m5, arch, hm\n"
+    private const val HEADER = "timestamp, ha, lt, m1, m5, arch, mh\n"
 
     private val dataFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale("zh", "tw"))
     private val lock = ReentrantLock()
 
     internal lateinit var APP_DIR: File
+    internal lateinit var CACHE_DIR: File
     internal val RECORDING_DIR: File
         get() {
             val dir = File(APP_DIR, "sarcopenia_record")

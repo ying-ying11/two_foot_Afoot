@@ -5,6 +5,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.utils.ExtraManager
@@ -32,9 +35,10 @@ class DataPage(private val min: Float, private val max: Float,
 
     private lateinit var leftChart: LineChart
     private lateinit var rightChart: LineChart
+//    private lateinit var select_insole: Spinner
     private var hasInit = false
     private var prevTime = 0L
-
+    private lateinit  var foot : String
     fun addData(deviceIndex: Int, values: List<FloatArray>) {
         if (context == null) return
         if (requireActivity() !is DataViewer) return
@@ -120,6 +124,20 @@ class DataPage(private val min: Float, private val max: Float,
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_data_page, container, false)
+//        select_insole = view.findViewById(R.id.select_foot)
+//        val adapter = ArrayAdapter.createFromResource(this.requireContext(), R.array.spinner_items, android.R.layout.simple_spinner_item)
+//        adapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line)
+//        select_insole.adapter = adapter
+//        select_insole.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+//            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+//                foot = position.toString()
+//            }
+//
+//            override fun onNothingSelected(p0: AdapterView<*>?) {
+//
+//            }
+//        }
+
 
         leftChart = view.findViewById(R.id.file_viewer_chart_left)
         initChart(leftChart)

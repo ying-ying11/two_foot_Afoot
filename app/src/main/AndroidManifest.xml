@@ -9,34 +9,41 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:screenOrientation="portrait"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Sarcopenia_project"
-        android:screenOrientation="portrait" >
-
+        android:theme="@style/Theme.Sarcopenia_project">
+        <activity
+            android:name=".connectBle"
+            android:exported="false" />
+        <activity
+            android:name=".ModeSelect"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop" >
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity android:name=".viewer.DataViewer" />
-        <activity android:name=".service.ScanDeviceActivity" android:noHistory="true" />
+        <activity
+            android:name=".service.ScanDeviceActivity"
+            android:noHistory="true" />
         <activity android:name=".file.FileManagerActivity" />
         <activity android:name=".file.FileDataViewer" />
         <activity android:name=".viewer.DeviceSelectActivity" />
@@ -44,7 +51,6 @@
         <service
             android:name=".service.BluetoothLeService"
             android:enabled="true" />
-
     </application>
 
 </manifest>

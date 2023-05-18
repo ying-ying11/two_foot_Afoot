@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ModeSelect">
+
+    <androidx.constraintlayout.helper.widget.Flow
+        android:id="@+id/flow2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#FFF"
+        app:constraint_referenced_ids="button,analysis_button,me_button,setting_button"
+        app:flow_horizontalStyle="spread"
+        app:flow_verticalAlign="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <androidx.constraintlayout.helper.widget.Flow
+        android:id="@+id/flow3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:constraint_referenced_ids="connect_button,gait_button2,cop_button,muscle_button"
+        app:flow_horizontalAlign="center"
+        app:flow_verticalGap="50dp"
+        app:layout_constraintBottom_toTopOf="@+id/flow2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/muscle_button"
+        android:layout_width="360dp"
+        android:layout_height="115dp"
+
+        android:background="@drawable/group_85__1_"
+        android:contentDescription="@string/app_name" />
+
+    <ImageButton
+        android:id="@+id/button"
+        android:layout_width="99dp"
+        android:layout_height="103dp"
+        android:background="@drawable/group_89" />
+
+    <ImageButton
+        android:id="@+id/connect_button"
+        android:layout_width="349dp"
+        android:layout_height="115dp"
+        android:background="@drawable/group_83__1_"
+        android:contentDescription="@string/app_name" />
+
+    <ImageButton
+        android:id="@+id/gait_button2"
+        android:layout_width="349dp"
+        android:layout_height="115dp"
+        android:background="@drawable/group_73__1_"
+        android:contentDescription="@string/app_name"
+        app:layout_constraintBottom_toTopOf="@+id/muscle_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/connect_button" />
+
+    <ImageButton
+        android:id="@+id/cop_button"
+        android:layout_width="357dp"
+        android:layout_height="115dp"
+        android:background="@drawable/group_84__1_" />
+
+    <ImageButton
+        android:id="@+id/me_button"
+        android:layout_width="60dp"
+        android:layout_height="67.8dp"
+        android:background="@drawable/group_87"
+        android:contentDescription="@string/app_name" />
+
+    <ImageButton
+        android:id="@+id/analysis_button"
+        android:layout_width="60dp"
+        android:layout_height="67.8dp"
+        android:background="@drawable/group_86"
+        android:contentDescription="@string/app_name" />
+
+    <ImageButton
+        android:id="@+id/setting_button"
+        android:layout_width="71dp"
+        android:layout_height="71.9dp"
+        android:background="@drawable/group_88"
+        android:contentDescription="@string/app_name" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

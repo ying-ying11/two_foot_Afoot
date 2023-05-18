@@ -14,6 +14,15 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        packagingOptions {
+            pickFirst 'META-INF/DEPENDENCIES'
+        }
+        packagingOptions {
+            pickFirst 'META-INF/LICENSE.md'
+        }
+        packagingOptions {
+            exclude 'META-INF/LICENSE-notice.md'
+        }
     }
 
     buildTypes {
@@ -40,7 +49,10 @@ android {
 }
 
 dependencies {
-    implementation 'com.flyn:fc_message:0.1.0'
+    implementation('com.github.psambit9791:jdsp:2.0.0') {
+        exclude group: 'org.apache.maven.surefire', module: 'common-java5'
+    }
+    implementation 'com.dtx804lab:dtx_netty_lib:0.3.0'
     implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.5.0'

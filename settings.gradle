@@ -5,9 +5,17 @@ dependencyResolutionManagement {
         mavenCentral()
         jcenter() // Warning: this repository is going to shut down soon
         maven { url 'https://jitpack.io' }
+        maven {
+            url = uri("https://maven.pkg.github.com/dtx-804-lab/dtx_netty_lib")
+            credentials {
+                Properties properties = new Properties()
+                properties.load(new File(rootDir.absolutePath + "/local.properties").newDataInputStream())
+
+                username = properties.getProperty('PUBLISHING_USERNAME') ?: System.getenv("USERNAME")
+                password = properties.getProperty('PUBLISHING_TOKEN') ?: System.getenv("TOKEN")
+            }
+        }
     }
 }
 rootProject.name = "sarcopenia_project"
 include ':app'
-
-includeBuild 'D:\\Flyn\\Java\\fc_message'

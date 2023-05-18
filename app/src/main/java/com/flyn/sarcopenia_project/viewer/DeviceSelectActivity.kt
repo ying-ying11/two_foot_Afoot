@@ -4,7 +4,11 @@ import android.content.*
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import com.flyn.sarcopenia_project.R
 import com.flyn.sarcopenia_project.service.BluetoothLeService
@@ -13,7 +17,11 @@ import com.flyn.sarcopenia_project.utils.ActionManager
 import com.flyn.sarcopenia_project.utils.ExtraManager
 
 class DeviceSelectActivity: AppCompatActivity() {
-
+    object Foot{
+        var foot = "male"
+    }
+    private lateinit var select_insole: Spinner
+//    lateinit var foot : String
     private val startButton: Button by lazy { findViewById(R.id.start_sampling_button) }
     private val devices: Array<DeviceSelector> by lazy {
         arrayOf(
@@ -76,6 +84,19 @@ class DeviceSelectActivity: AppCompatActivity() {
             }
             device.setDisconnectCallback {
                 service?.disconnect(index)
+            }
+        }
+        select_insole = findViewById(R.id.select_foot)
+        val adapter = ArrayAdapter.createFromResource(this, R.array.spinner_items, android.R.layout.simple_spinner_item)
+        adapter.setDropDownViewResource(android.R.layout.simple_dropdown_item_1line)
+        select_insole.adapter = adapter
+        select_insole.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                Foot.foot = position.toString()
+            }
+
+            override fun onNothingSelected(p0: AdapterView<*>?) {
+
             }
         }
         startButton.setOnClickListener {

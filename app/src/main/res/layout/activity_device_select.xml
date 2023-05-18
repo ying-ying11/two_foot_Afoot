@@ -4,6 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <Spinner
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/select_foot"
+        android:autofillHints="Select Insole"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/left_foot"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+<!--        android:background="@drawable"/>-->
     <com.flyn.sarcopenia_project.viewer.DeviceSelector
         android:id="@+id/left_foot"
         android:layout_width="0dp"
@@ -24,7 +34,7 @@
         android:layout_margin="10dp"
         app:constraint_referenced_ids="left_foot,right_foot"
         app:flow_verticalGap="10dp"
-       app:layout_constraintBottom_toTopOf="@id/start_sampling_button"
+        app:layout_constraintBottom_toTopOf="@id/start_sampling_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

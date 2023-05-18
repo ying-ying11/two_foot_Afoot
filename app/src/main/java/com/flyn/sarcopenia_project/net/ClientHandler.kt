@@ -2,9 +2,9 @@ package com.flyn.sarcopenia_project.net
 
 import android.content.Context
 import android.widget.Toast
-import com.flyn.fc_message.message.FileMessage
-import com.flyn.fc_message.message.KeyMessage
-import com.flyn.fc_message.message.UUIDMessage
+import com.dtx804lab.dtx_netty_lib.message.FileMessage
+import com.dtx804lab.dtx_netty_lib.message.KeyMessage
+import com.dtx804lab.dtx_netty_lib.message.UUIDMessage
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import kotlinx.coroutines.Dispatchers

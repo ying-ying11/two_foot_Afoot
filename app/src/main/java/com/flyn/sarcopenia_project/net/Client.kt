@@ -1,10 +1,10 @@
 package com.flyn.sarcopenia_project.net
 
 import android.content.Context
-import com.flyn.fc_message.base.RawMessageCodec
-import com.flyn.fc_message.secure.AesCodec
-import com.flyn.fc_message.secure.RsaCodec
-import com.flyn.fc_message.secure.decodeHex
+import com.dtx804lab.dtx_netty_lib.base.RawMessageCodec
+import com.dtx804lab.dtx_netty_lib.secure.AesCodec
+import com.dtx804lab.dtx_netty_lib.secure.RsaCodec
+import com.dtx804lab.dtx_netty_lib.secure.decodeHex
 import io.github.cdimascio.dotenv.dotenv
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelInitializer
